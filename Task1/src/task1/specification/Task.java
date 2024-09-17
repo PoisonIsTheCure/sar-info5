@@ -1,7 +1,7 @@
 package task1.specification;
 
 public abstract class Task extends Thread {
-    Task(Broker b, Runnable r){
+    public Task(Broker b, Runnable r){
 
     }
 
