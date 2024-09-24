@@ -21,9 +21,9 @@ public class Sender extends Thread {
 
     private Broker getBroker() {
         if (broker == null) {
-            broker = Task.getBroker();
+            this.broker = Task.getBroker();
         }
-        return broker;
+        return this.broker;
     }
 
     private int getPort() {
@@ -33,6 +33,10 @@ public class Sender extends Thread {
     public boolean establishConnection() {
         try {
             this.channel = getBroker().connect(receiverBrokerName, getPort());
+            if (channel == null) {
+                System.out.println("Failed to establish connection in Sender");
+                return false;
+            }
         } catch (IOException e) {
             System.out.println("Failed to establish connection in Sender");
             return false;
@@ -94,6 +98,8 @@ public class Sender extends Thread {
 
             nbMessages--;
         }
+
+        disconnect();
     }
 
     public void disconnect() {
@@ -102,6 +108,8 @@ public class Sender extends Thread {
         }
     }
 
+
+    @Override
     public void run() {
         boolean connected = establishConnection();
         if (!connected) {

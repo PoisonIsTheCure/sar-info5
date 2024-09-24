@@ -1,8 +1,6 @@
 package task1.specification;
 
 public abstract class Channel {
-
-
     /**
      * This function reads the given length from Channel.
      *
