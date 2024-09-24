@@ -21,7 +21,8 @@ public class Receiver extends Thread {
         if (broker == null) {
             broker = Task.getBroker();
         }
-        return broker;
+
+        return this.broker;
     }
 
     private int getPort() {
@@ -113,6 +114,7 @@ public class Receiver extends Thread {
         }
     }
 
+    @Override
     public void run() {
         boolean connected = establishConnection();
         if (!connected) {

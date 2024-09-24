@@ -1,8 +1,12 @@
 package task1.specification;
 
 public abstract class Task extends Thread {
-    public Task(Broker b, Runnable r){
+    protected Broker broker;
+    protected Runnable taskRunnable;
 
+    public Task(Broker b, Runnable r){
+        this.broker = b;
+        this.taskRunnable = r;
     }
 
     /**
@@ -17,7 +21,7 @@ public abstract class Task extends Thread {
      * @return Broker corresponding to the current Task
      */
     public static Broker getBroker() throws IllegalStateException {
-        throw new IllegalStateException("Unimplemented Method");
+        return ((Task) Thread.currentThread()).broker;
     }
 
 }
