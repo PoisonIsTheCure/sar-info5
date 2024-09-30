@@ -21,7 +21,6 @@ public class Receiver extends Thread {
         if (broker == null) {
             broker = Task.getBroker();
         }
-
         return this.broker;
     }
 
@@ -120,7 +119,6 @@ public class Receiver extends Thread {
         if (!connected) {
             return;
         }
-
         infiniteLoopReceiving();
     }
 }
