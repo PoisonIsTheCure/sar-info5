@@ -1,47 +1,52 @@
 package task1.implementation;
 
+import task1.CircularBuffer;
 import task1.specification.Channel;
-
 
 public class ChannelImpl extends Channel {
 
-    private BufferController receptionBuffer;
-    private BufferController emissionBuffer;
+    private CircularBuffer receptionBuffer;
+    private CircularBuffer emissionBuffer;
     private Rdv rdv;
     private boolean disconnected = false;        // Indicates fully disconnected state
     private boolean halfDisconnected = false;    // Indicates that disconnection has been initiated but pending bytes are left
 
-    public ChannelImpl(BufferController receptionBuffer, BufferController emissionBuffer, Rdv rdv) {
+    public ChannelImpl(CircularBuffer receptionBuffer, CircularBuffer emissionBuffer, Rdv rdv) {
         this.receptionBuffer = receptionBuffer;
         this.emissionBuffer = emissionBuffer;
         this.rdv = rdv;
     }
 
     @Override
-    public synchronized int write(byte[] bytes, int offset, int length) {
+    public int write(byte[] bytes, int offset, int length) {
         // Check if the channel is disconnected or half-disconnected
-        if (this.disconnected) {
-            throw new IllegalStateException("Cannot write to a disconnected channel");
-        } else if (this.halfDisconnected) {
-            throw new IllegalStateException("The channel is half-disconnected (other end not reading) and cannot be written to");
+        synchronized (emissionBuffer) {
+            if (this.disconnected) {
+                throw new IllegalStateException("Cannot write to a disconnected channel");
+            } else if (this.halfDisconnected) {
+                throw new IllegalStateException("The channel is half-disconnected (other end not reading) and cannot be written to");
+            }
         }
 
         int bytesWritten = 0;
 
         // Write bytes one at a time, blocking if necessary
         for (int i = offset; i < offset + length; i++) {
-            if (this.disconnected) {
-                throw new IllegalStateException("Channel is disconnected during write");
+            synchronized (emissionBuffer) {
+                while (this.emissionBuffer.full()) {
+                    try {
+                        emissionBuffer.wait(); // Wait until space is available
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+                this.emissionBuffer.push(bytes[i]);
+                bytesWritten++;
+                emissionBuffer.notifyAll(); // Notify any waiting threads
             }
 
-            try {
-                emissionBuffer.push(bytes[i]); // Push bytes to the emission buffer
-                bytesWritten++;
-            } catch (InterruptedException e) {
-                if (bytesWritten == 0) {
-                    return -1; // Return -1 if no bytes were written
-                }
-                return bytesWritten;
+            if (this.disconnected) {
+                throw new IllegalStateException("Channel is disconnected during write");
             }
         }
 
@@ -49,35 +54,38 @@ public class ChannelImpl extends Channel {
     }
 
     @Override
-    public synchronized int read(byte[] bytes, int offset, int length) {
+    public int read(byte[] bytes, int offset, int length) {
         // Check if the channel is fully disconnected
-        if (this.disconnected) {
-            throw new IllegalStateException("Cannot read from a fully disconnected channel");
+        synchronized (receptionBuffer) {
+            if (this.disconnected) {
+                throw new IllegalStateException("Cannot read from a fully disconnected channel");
+            }
         }
 
         int bytesRead = 0;
 
         // Read bytes one at a time, blocking if necessary
         for (int i = offset; i < offset + length; i++) {
+            synchronized (receptionBuffer) {
+                while (this.receptionBuffer.empty()) {
+                    if (halfDisconnected) {
+                        this.disconnected = true;
+                        this.halfDisconnected = false;
+                        throw new IllegalStateException("Channel is now fully disconnected after reading in-transit bytes");
+                    }
+                    try {
+                        receptionBuffer.wait(); // Wait until data is available
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+                bytes[bytesRead + offset] = this.receptionBuffer.pull();
+                bytesRead++;
+                receptionBuffer.notifyAll(); // Notify any waiting threads
+            }
+
             if (this.disconnected) {
                 throw new IllegalStateException("Channel is disconnected during read");
-            }
-
-            try {
-                bytes[bytesRead + offset] = receptionBuffer.pull(); // Pull bytes from the reception buffer
-                bytesRead++;
-            } catch (InterruptedException e) {
-                if (bytesRead == 0) {
-                    return -1; // Return -1 if no bytes were read
-                }
-                return bytesRead;
-            }
-
-            // Check if the buffer is empty and half-disconnected, complete disconnection
-            if (halfDisconnected && receptionBuffer.empty()) {
-                this.disconnected = true;
-                this.halfDisconnected = false;
-                throw new IllegalStateException("Channel is now fully disconnected after reading in-transit bytes");
             }
         }
 
@@ -85,17 +93,20 @@ public class ChannelImpl extends Channel {
     }
 
     public void halfDisconnect() {
-        if (!this.disconnected) {
-            // only half-disconnect if not fully disconnected (local disconnection requested
-            this.halfDisconnected = true;
+        synchronized (this) {
+            if (!this.disconnected) {
+                // only half-disconnect if not fully disconnected
+                this.halfDisconnected = true;
+            }
         }
     }
 
     @Override
-    public synchronized void disconnect() {
-        // local disconnection requested
-        this.disconnected = true;
-        this.rdv.disconnect();
+    public void disconnect() {
+        synchronized (this) {
+            this.disconnected = true;
+            this.rdv.disconnect();
+        }
     }
 
     @Override

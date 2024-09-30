@@ -46,12 +46,9 @@ public class Sender extends Thread {
 
     private void sendMessage() {
         byte[] messageBytesArray = message.getBytes();
-
-        // Send message length to the channel
         byte[] lengthBytes = intToByteArray(messageBytesArray.length);
         int totalSent = 0;
 
-        // Ensure the entire length array is sent
         while (totalSent < lengthBytes.length) {
             int sentData = channel.write(lengthBytes, totalSent, lengthBytes.length - totalSent);
             if (sentData == -1) {
@@ -61,7 +58,6 @@ public class Sender extends Thread {
             totalSent += sentData;
         }
 
-        // Send the actual message
         totalSent = 0;
         while (totalSent < messageBytesArray.length) {
             int sentData = channel.write(messageBytesArray, totalSent, messageBytesArray.length - totalSent);
@@ -73,23 +69,28 @@ public class Sender extends Thread {
         }
     }
 
-
     private byte[] intToByteArray(int length) {
-        // Allocate a ByteBuffer , 4 bytes for an integer
         ByteBuffer buffer = ByteBuffer.allocate(4);
-
         buffer.putInt(length);
-
         return buffer.array();
     }
 
+    private void testDisconnectHandling() {
+        try {
+            System.out.println("Testing disconnection...");
+            this.channel.disconnect();
+            byte[] testBuffer = new byte[10];
+            this.channel.write(testBuffer, 0, testBuffer.length); // Should throw exception
+        } catch (Exception e) {
+            System.out.println("Disconnection test passed: " + e.getMessage());
+        }
+    }
 
     private void infiniteLoopSending() {
         int nbMessages = TestRunner.NUMBER_OF_MESSAGES;
 
-        while(nbMessages > 0) {
+        while (nbMessages > 0) {
             sendMessage();
-            // Sleep for 1 second
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
@@ -99,6 +100,7 @@ public class Sender extends Thread {
             nbMessages--;
         }
 
+        testDisconnectHandling();  // Run disconnection test after sending messages
         disconnect();
     }
 
@@ -108,7 +110,6 @@ public class Sender extends Thread {
         }
     }
 
-
     @Override
     public void run() {
         boolean connected = establishConnection();
@@ -117,7 +118,6 @@ public class Sender extends Thread {
         }
 
         infiniteLoopSending();
-
     }
 
 }

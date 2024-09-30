@@ -8,27 +8,28 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class BrokerManager {
-    public List<BrokerImpl> brokers = new ArrayList<BrokerImpl>();
+    public HashMap<String,Broker> brokers = new HashMap<String,Broker>();
 
     public BrokerManager() {
     }
 
-    public void addBroker(BrokerImpl broker) {
-        brokers.add(broker);
+    public synchronized void addBroker(BrokerImpl broker) {
+        String name = broker.getName();
+        Broker exists = brokers.get(name);
+
+        if (exists != null) {
+            throw new IllegalArgumentException("Broker " + name + " already exists");
+        }
+
+        brokers.put(name, broker);
     }
 
-    public void removeBroker(BrokerImpl broker) {
+    public synchronized void removeBroker(BrokerImpl broker) {
         brokers.remove(broker);
     }
 
-    public BrokerImpl getBroker(String name) {
-        for (BrokerImpl broker : brokers) {
-            if (broker.getName().equals(name)) {
-                return (BrokerImpl) broker;
-            }
-        }
-        
-        return null;
+    public Broker getBroker(String name) {
+        return brokers.get(name);
     }
 
 

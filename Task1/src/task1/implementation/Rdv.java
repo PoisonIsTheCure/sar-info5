@@ -1,5 +1,6 @@
 package task1.implementation;
 
+import task1.CircularBuffer;
 import task1.specification.Broker;
 import task1.specification.Channel;
 
@@ -11,8 +12,8 @@ public class Rdv {
     private Semaphore waitingControlSemaphore;
 
     // Buffers
-    private BufferController receptionBuffer;
-    private BufferController emissionBuffer;
+    private CircularBuffer receptionBuffer;
+    private CircularBuffer emissionBuffer;
 
     private Broker connectBroker;
     private Broker acceptBroker;
@@ -59,8 +60,8 @@ public class Rdv {
 
     private void establishChannels() {
         int capacity = 10;
-        this.receptionBuffer = new BufferController(capacity);
-        this.emissionBuffer = new BufferController(capacity);
+        this.receptionBuffer = new CircularBuffer(capacity);
+        this.emissionBuffer = new CircularBuffer(capacity);
 
         this.acceptChannel = new ChannelImpl(receptionBuffer, emissionBuffer, this);
         this.connectChannel = new ChannelImpl(emissionBuffer, receptionBuffer, this);

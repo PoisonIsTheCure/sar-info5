@@ -12,8 +12,8 @@ import java.util.Queue;
 public class BrokerImpl extends Broker {
     private BrokerManager manager;
 
-    // Stores the queues of Rdv objects per port
-    private final Map<Integer, Queue<Rdv>> rdvMap;
+    // Stores the Rdv objects per port
+    private final Map<Integer, Rdv> rdvMap;
 
     public BrokerImpl(String name, BrokerManager manager) {
         super(name);
@@ -23,42 +23,25 @@ public class BrokerImpl extends Broker {
     }
 
     @Override
-    public synchronized Channel accept(int port) throws IOException {
+    public Channel accept(int port) throws IOException {
         if (port < 0) {
             throw new IOException("Invalid port number");
         }
 
-        // Retrieve the queue for the port, or create a new one if it doesn't exist
-        Queue<Rdv> rdvQueue;
-        synchronized (this.rdvMap) {
-            rdvQueue = rdvMap.get(port);
-            if (rdvQueue == null) {
-                rdvQueue = new LinkedList<>();
-                rdvMap.put(port, rdvQueue);
-            }
-
-            if (rdvQueue.isEmpty()) {
-                Rdv newRdv = new Rdv(this);
-                rdvQueue.add(newRdv);
-            }
-
-            // Retrieve and remove the oldest Rdv from the queue
-            Rdv oldestRdv = rdvQueue.poll();
-            if (oldestRdv == null) {
-                // In this case, we add the Rdv to the queue
-                oldestRdv = new Rdv(this);
-                rdvQueue.add(oldestRdv);
-            }
-
-            // Notify the Rdv that the connection has been accepted
-            return oldestRdv.waitForConnect();
+        // Retrieve the Rdv of the port, or create a new one if it doesn't exist
+        Rdv acceptRdv;
+        synchronized (this.rdvMap)  {
+            acceptRdv = rdvMap.computeIfAbsent(port, k -> new Rdv(this));
         }
+
+        // Notify the Rdv that the connection has been accepted
+        return acceptRdv.waitForConnect();
     }
 
     @Override
     public Channel connect(String name, int port) throws IOException {
         // First we need to check if the broker is available
-        BrokerImpl broker = this.manager.getBroker(name);
+        BrokerImpl broker = (BrokerImpl) this.manager.getBroker(name);
 
         if (broker == null) {
             return null;
@@ -79,42 +62,28 @@ public class BrokerImpl extends Broker {
 
     // Internal function between brokers
     public Rdv receiveConnectionRequest(BrokerImpl senderBroker, int port) {
-        // Create or retrieve the queue for the specified port
-        Queue<Rdv> rdvQueue;
-        Rdv newRdv;
+
+        Rdv connectRdv;
 
         synchronized (this.rdvMap) {
-            rdvQueue = rdvMap.get(port);
-            if (rdvQueue == null) {
-                rdvQueue = new LinkedList<>();
-                rdvMap.put(port, rdvQueue);
-            }
-
-            // Check if a Rdv already exists for the sender broker
-            for (Rdv rdv : rdvQueue) {
-                if (rdv.getConnectBrokerName().equals(senderBroker.getName())) {
-                    return rdv;
-                }
-            }
-
-            // If not, create a new Rdv and add it to the queue
-            newRdv = new Rdv(this);
-            newRdv.setConnectBroker(senderBroker);
-            rdvQueue.add(newRdv);
+            connectRdv = rdvMap.computeIfAbsent(port, k -> new Rdv(this));
         }
 
-        // Allow Channel Creation by sending the Sender Broker Instance
-        newRdv.setConnectBroker(senderBroker);
+        connectRdv.setConnectBroker(senderBroker);
 
-        return newRdv;
+        // Allow Channel Creation by sending the Sender Broker Instance
+        connectRdv.setConnectBroker(senderBroker);
+
+        return connectRdv;
     }
 
     // Remove Rdv from the queue
     public void removeRdvAndDisconnect(Rdv rdv) {
         synchronized (this.rdvMap) {
-            for (Queue<Rdv> queue : rdvMap.values()) {
-                synchronized (queue) {
-                    queue.remove(rdv);
+            for (Map.Entry<Integer, Rdv> entry : rdvMap.entrySet()) {
+                if (entry.getValue() == rdv) {
+                    rdvMap.remove(entry.getKey());
+                    break;
                 }
             }
         }
