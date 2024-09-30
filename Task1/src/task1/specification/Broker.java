@@ -3,7 +3,11 @@ package task1.specification;
 import java.io.IOException;
 
 public abstract class Broker {
+
+    protected String name;
+
     public Broker(String name) {
+        this.name = name;
     }
 
     /**
@@ -32,6 +36,14 @@ public abstract class Broker {
     public Channel connect(String name, int port) throws IOException{
         throw new IllegalStateException("Unimplemented Method");
     }
+
+    /**
+     * Get the name of the broker
+     *
+     * @return The name of the broker
+     */
+    public String getName() {
+        return name;
+    }
+
 }
-
-
