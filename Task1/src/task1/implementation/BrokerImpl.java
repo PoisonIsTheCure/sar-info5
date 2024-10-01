@@ -69,8 +69,6 @@ public class BrokerImpl extends Broker {
             connectRdv = rdvMap.computeIfAbsent(port, k -> new Rdv(this));
         }
 
-        connectRdv.setConnectBroker(senderBroker);
-
         // Allow Channel Creation by sending the Sender Broker Instance
         connectRdv.setConnectBroker(senderBroker);
 

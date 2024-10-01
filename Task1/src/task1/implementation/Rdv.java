@@ -8,6 +8,9 @@ import java.util.concurrent.Semaphore;
 
 public class Rdv {
 
+    // Circular Buffer static Size
+    public static final int BUFFER_SIZE = 10;
+
     // Semaphores to control the connection
     private Semaphore waitingControlSemaphore;
 
@@ -59,7 +62,7 @@ public class Rdv {
 
 
     private void establishChannels() {
-        int capacity = 10;
+        int capacity = BUFFER_SIZE;
         this.receptionBuffer = new CircularBuffer(capacity);
         this.emissionBuffer = new CircularBuffer(capacity);
 
@@ -99,6 +102,5 @@ public class Rdv {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-
     }
 }

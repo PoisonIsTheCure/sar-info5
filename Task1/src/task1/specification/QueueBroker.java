@@ -7,7 +7,7 @@ import java.io.IOException;
  */
 public abstract class QueueBroker {
 
-    private Broker broker;
+    protected Broker broker;
 
     /**
      * Constructor to initialize the QueueBroker with a Broker.
