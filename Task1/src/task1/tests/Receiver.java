@@ -21,7 +21,7 @@ public class Receiver extends Thread {
         if (broker == null) {
             broker = Task.getBroker();
         }
-        return broker;
+        return this.broker;
     }
 
     private int getPort() {
@@ -39,24 +39,18 @@ public class Receiver extends Thread {
     }
 
     private int byteArrayToInt(byte[] byteArray) {
-        // Check if the input byte array is valid
         if (byteArray == null || byteArray.length != 4) {
             throw new IllegalArgumentException("Invalid byte array size. Expected 4 bytes.");
         }
-        // Wrap the byte array into a ByteBuffer
         ByteBuffer buffer = ByteBuffer.wrap(byteArray);
-        // Retrieve the integer value from the buffer
         return buffer.getInt();
     }
 
-
     private void receiveMessage() {
         try {
-            // Read message length from the channel
-            byte[] lengthBuffer = new byte[4]; // Integer has 4 bytes
+            byte[] lengthBuffer = new byte[4];
             int totalBytesRead = 0;
 
-            // Read exactly 4 bytes to get the message length
             while (totalBytesRead < lengthBuffer.length) {
                 int bytesRead = channel.read(lengthBuffer, totalBytesRead, lengthBuffer.length - totalBytesRead);
                 if (bytesRead == -1) {
@@ -68,11 +62,9 @@ public class Receiver extends Thread {
 
             int messageLength = byteArrayToInt(lengthBuffer);
 
-            // Read the actual message
             byte[] messageBuffer = new byte[messageLength];
             totalBytesRead = 0;
 
-            // Read messageLength bytes to get the full message
             while (totalBytesRead < messageBuffer.length) {
                 int bytesRead = channel.read(messageBuffer, totalBytesRead, messageBuffer.length - totalBytesRead);
                 if (bytesRead == -1) {
@@ -82,29 +74,37 @@ public class Receiver extends Thread {
                 totalBytesRead += bytesRead;
             }
 
-            // Print the received message
-            System.out.println("Received message ("+ this.numberOfMessagesReceived +"): " + new String(messageBuffer));
+            System.out.println("Received message (" + this.numberOfMessagesReceived + "): " + new String(messageBuffer));
 
         } catch (Exception e) {
             System.out.println("Error receiving message in Receiver: " + e.getMessage());
         }
     }
 
+    private void testDisconnectHandling() {
+        try {
+            System.out.println("Testing disconnection...");
+            this.channel.disconnect();
+            byte[] testBuffer = new byte[10];
+            this.channel.read(testBuffer, 0, testBuffer.length); // Should throw exception
+        } catch (Exception e) {
+            System.out.println("Disconnection test passed: " + e.getMessage());
+        }
+    }
 
     private void infiniteLoopReceiving() {
         int numberOfMessages = TestRunner.NUMBER_OF_MESSAGES;
         while (numberOfMessages > 0) {
             receiveMessage();
-            // Sleep for a short period to avoid busy-waiting
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
                 System.out.println("Failed to sleep in Receiver");
             }
-
             numberOfMessages--;
             this.numberOfMessagesReceived++;
         }
+        testDisconnectHandling();  // Run disconnection test after receiving messages
     }
 
     public void disconnect() {
@@ -113,13 +113,12 @@ public class Receiver extends Thread {
         }
     }
 
+    @Override
     public void run() {
         boolean connected = establishConnection();
         if (!connected) {
             return;
         }
-
         infiniteLoopReceiving();
     }
-
 }
