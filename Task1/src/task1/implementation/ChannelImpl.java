@@ -2,6 +2,7 @@ package task1.implementation;
 
 import task1.CircularBuffer;
 import task1.specification.Channel;
+import task1.specification.DisconnectedException;
 
 public class ChannelImpl extends Channel {
 
@@ -18,13 +19,13 @@ public class ChannelImpl extends Channel {
     }
 
     @Override
-    public int write(byte[] bytes, int offset, int length) {
+    public int write(byte[] bytes, int offset, int length) throws DisconnectedException {
         // Check if the channel is disconnected or half-disconnected
         synchronized (emissionBuffer) {
             if (this.disconnected) {
-                throw new IllegalStateException("Cannot write to a disconnected channel");
+                throw new DisconnectedException("Cannot write to a disconnected channel");
             } else if (this.halfDisconnected) {
-                throw new IllegalStateException("The channel is half-disconnected (other end not reading) and cannot be written to");
+                throw new DisconnectedException("The channel is half-disconnected (other end not reading) and cannot be written to");
             }
         }
 
@@ -46,7 +47,7 @@ public class ChannelImpl extends Channel {
             }
 
             if (this.disconnected) {
-                throw new IllegalStateException("Channel is disconnected during write");
+                throw new DisconnectedException("Channel is disconnected during write");
             }
         }
 
@@ -54,11 +55,11 @@ public class ChannelImpl extends Channel {
     }
 
     @Override
-    public int read(byte[] bytes, int offset, int length) {
+    public int read(byte[] bytes, int offset, int length) throws DisconnectedException {
         // Check if the channel is fully disconnected
         synchronized (receptionBuffer) {
             if (this.disconnected) {
-                throw new IllegalStateException("Cannot read from a fully disconnected channel");
+                throw new DisconnectedException("Cannot read from a fully disconnected channel");
             }
         }
 
@@ -71,7 +72,7 @@ public class ChannelImpl extends Channel {
                     if (halfDisconnected) {
                         this.disconnected = true;
                         this.halfDisconnected = false;
-                        throw new IllegalStateException("Channel is now fully disconnected after reading in-transit bytes");
+                        throw new DisconnectedException("Channel is now fully disconnected after reading in-transit bytes");
                     }
                     try {
                         receptionBuffer.wait(); // Wait until data is available
@@ -85,7 +86,7 @@ public class ChannelImpl extends Channel {
             }
 
             if (this.disconnected) {
-                throw new IllegalStateException("Channel is disconnected during read");
+                throw new DisconnectedException("Channel is disconnected during read");
             }
         }
 

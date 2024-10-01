@@ -2,6 +2,7 @@ package task1.tests;
 
 import task1.specification.Broker;
 import task1.specification.Channel;
+import task1.specification.MessageQueue;
 import task1.specification.Task;
 
 import java.io.IOException;

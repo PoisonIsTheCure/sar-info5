@@ -29,6 +29,10 @@ public class QueueBrokerImpl extends QueueBroker {
                 throw new IOException("Failed to accept connection on port " + port + " for " + name());
             }
 
+            // Create a MessageQueue that uses the Channel
+            MessageQueue messageQueue = new MessageQueueImpl(channel);
+            return messageQueue;
+
         } catch (IOException e) {
             throw new IllegalStateException("Error accepting connection: " + e.getMessage());
         }
