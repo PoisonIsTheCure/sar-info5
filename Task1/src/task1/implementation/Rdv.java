@@ -99,6 +99,5 @@ public class Rdv {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-
     }
 }
