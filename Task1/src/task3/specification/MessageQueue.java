@@ -1,4 +1,4 @@
-package task1.specification;
+package task3.specification;
 
 /**
  * Abstract class representing a message queue used for sending and receiving messages.

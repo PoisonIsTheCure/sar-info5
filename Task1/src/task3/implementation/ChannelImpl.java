@@ -1,8 +1,8 @@
-package task1.implementation;
+package task3.implementation;
 
-import task1.CircularBuffer;
-import task1.specification.Channel;
-import task1.specification.DisconnectedException;
+import task3.CircularBuffer;
+import task3.specification.Channel;
+import task3.specification.DisconnectedException;
 
 public class ChannelImpl extends Channel {
 

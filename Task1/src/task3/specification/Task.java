@@ -1,4 +1,4 @@
-package task1.specification;
+package task3.specification;
 
 public abstract class Task extends Thread {
 

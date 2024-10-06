@@ -1,11 +1,9 @@
-package task1.specification;
-
-import java.io.IOException;
+package task3.specification;
 
 /**
  * Abstract class representing a broker that manages message queues for communication.
  */
-public abstract class QueueBroker {
+public abstract class QueueBroker implements AcceptListener, ConnectListener {
 
     protected Broker broker;
 

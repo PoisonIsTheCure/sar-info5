@@ -1,4 +1,4 @@
-package task1.implementation;
+package task3.implementation;
 
 // Class to store the messages in the queue
 class Message {

@@ -1,12 +1,12 @@
-package task1.tests;
+package task3.tests;
 
-import task1.implementation.BrokerImpl;
-import task1.implementation.BrokerManager;
-import task1.implementation.QueueBrokerImpl;
-import task1.implementation.TaskImpl;
-import task1.specification.Broker;
-import task1.specification.QueueBroker;
-import task1.specification.Task;
+import task3.implementation.BrokerImpl;
+import task3.implementation.BrokerManager;
+import task3.implementation.QueueBrokerImpl;
+import task3.implementation.TaskImpl;
+import task3.specification.Broker;
+import task3.specification.QueueBroker;
+import task3.specification.Task;
 
 public class MessageQueueTest {
 
