@@ -1,8 +1,8 @@
-package task1.implementation;
+package task2.implementation;
 
-import task1.CircularBuffer;
-import task1.specification.Broker;
-import task1.specification.Channel;
+import task2.CircularBuffer;
+import task2.specification.Broker;
+import task2.specification.Channel;
 
 import java.util.concurrent.Semaphore;
 

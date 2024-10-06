@@ -1,8 +1,8 @@
-package task1.implementation;
+package task2.implementation;
 
-import task1.specification.Broker;
-import task1.specification.QueueBroker;
-import task1.specification.Task;
+import task2.specification.Broker;
+import task2.specification.QueueBroker;
+import task2.specification.Task;
 
 public class TaskImpl extends Task {
     public TaskImpl(Broker b, Runnable r) {

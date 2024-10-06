@@ -1,8 +1,8 @@
-package task1.tests;
+package task2.tests;
 
-import task1.specification.Broker;
-import task1.specification.Channel;
-import task1.specification.Task;
+import task2.specification.Broker;
+import task2.specification.Channel;
+import task2.specification.Task;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

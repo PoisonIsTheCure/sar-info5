@@ -1,9 +1,8 @@
-package task1.tests;
+package task2.tests;
 
-import task1.specification.Broker;
-import task1.specification.MessageQueue;
-import task1.specification.QueueBroker;
-import task1.specification.Task;
+import task2.specification.MessageQueue;
+import task2.specification.QueueBroker;
+import task2.specification.Task;
 
 public class MessageReceiver extends Thread {
 

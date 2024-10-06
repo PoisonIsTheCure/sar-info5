@@ -1,4 +1,4 @@
-package task1.specification;
+package task2.specification;
 
 import java.io.IOException;
 

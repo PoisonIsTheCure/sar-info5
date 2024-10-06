@@ -1,6 +1,4 @@
-package task1.specification;
-
-import java.io.IOException;
+package task2.specification;
 
 /**
  * Abstract class representing a broker that manages message queues for communication.

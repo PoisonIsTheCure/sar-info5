@@ -1,13 +1,11 @@
-package task1.implementation;
+package task2.implementation;
 
-import task1.specification.Broker;
-import task1.specification.MessageQueue;
-import task1.specification.QueueBroker;
-import task1.specification.Channel;
+import task2.specification.Broker;
+import task2.specification.MessageQueue;
+import task2.specification.QueueBroker;
+import task2.specification.Channel;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 public class QueueBrokerImpl extends QueueBroker {
 
