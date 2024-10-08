@@ -64,14 +64,4 @@ public class QueueBrokerImpl extends QueueBroker {
     public void unbind(int port) {
 
     }
-
-    @Override
-    public void connected(MessageQueue messageQueue) {
-
-    }
-
-    @Override
-    public void refused() {
-
-    }
 }

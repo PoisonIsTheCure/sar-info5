@@ -3,9 +3,20 @@ package task3.specification;
 /**
  * Abstract class representing a broker that manages message queues for communication.
  */
-public abstract class QueueBroker implements AcceptListener, ConnectListener {
+public abstract class QueueBroker {
 
     protected Broker broker;
+
+    interface AcceptListener {
+
+        void accepted(MessageQueue queue);
+
+    }
+
+    interface ConnectListener {
+        void connected(MessageQueue messageQueue);
+        void refused();
+    }
 
     /**
      * Constructor to initialize the QueueBroker with a Broker.
@@ -34,12 +45,31 @@ public abstract class QueueBroker implements AcceptListener, ConnectListener {
     public abstract MessageQueue accept(int port);
 
     /**
-     * Connects to a message queue identified by its name on a specific port.
+     * Connects to a broker on a specified port and returns a MessageQueue.
      *
+     * This method is non-blocking and will return immediately.
+     * The MessageQueue will be set up to handle the connection once it is established.
      *
-     * @param name The name of the queue to connect to.
-     * @param port The port on which the queue is available.
-     * @return The MessageQueue representing the connection. or null if the corresponding queue is not found.
+     * @param name The name of the broker to connect to.
+     * @param port The port on which to connect.
+     * @return The MessageQueue that is set up to handle the connection.
      */
-    public abstract MessageQueue connect(String name, int port);
+    public abstract boolean connect(String name, int port, ConnectListener listener);
+
+
+    /**
+     * Binds a message queue to a specific port.
+     *
+     * @param port The port to bind the message queue to.
+     * @param name The name of the message queue to bind.
+     */
+    public abstract void bind(int port, String name);
+
+
+    /**
+     * Unbinds a message queue from a specific port.
+     *
+     * @param port The port to unbind the message queue from.
+     */
+    public abstract void unbind(int port);
 }
