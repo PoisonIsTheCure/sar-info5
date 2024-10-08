@@ -7,13 +7,13 @@ public abstract class QueueBroker {
 
     protected Broker broker;
 
-    interface AcceptListener {
+    public interface AcceptListener {
 
         void accepted(MessageQueue queue);
 
     }
 
-    interface ConnectListener {
+    public interface ConnectListener {
         void connected(MessageQueue messageQueue);
         void refused();
     }
@@ -34,15 +34,6 @@ public abstract class QueueBroker {
      */
     public abstract String name();
 
-    /**
-     * Accepts connections on a specified port and returns a MessageQueue.
-     *
-     * This method is blocking and will wait until a connection is established.
-     *
-     * @param port The port on which to accept connections.
-     * @return The MessageQueue that is set up to handle incoming connections.
-     */
-    public abstract MessageQueue accept(int port);
 
     /**
      * Connects to a broker on a specified port and returns a MessageQueue.
@@ -61,9 +52,9 @@ public abstract class QueueBroker {
      * Binds a message queue to a specific port.
      *
      * @param port The port to bind the message queue to.
-     * @param name The name of the message queue to bind.
+     * @param listener The listener to be notified when a connection is accepted.
      */
-    public abstract void bind(int port, String name);
+    public abstract void bind(int port, AcceptListener listener);
 
 
     /**

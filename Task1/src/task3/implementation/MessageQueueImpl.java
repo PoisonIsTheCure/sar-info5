@@ -39,6 +39,11 @@ public class MessageQueueImpl extends MessageQueue {
     }
 
     @Override
+    public void setListener(MessageQueue.Listener l) {
+
+    }
+
+    @Override
     public void send(byte[] bytes, int offset, int length) throws DisconnectedException {
         if (isClosed) {
             throw new DisconnectedException("MessageQueue is closed. Cannot send messages.");
@@ -51,6 +56,11 @@ public class MessageQueueImpl extends MessageQueue {
 
         // Release a permit to indicate that a message is ready to be sent
         sendSemaphore.release();
+    }
+
+    @Override
+    public void send(byte[] bytes) throws DisconnectedException {
+
     }
 
     @Override
@@ -219,6 +229,8 @@ public class MessageQueueImpl extends MessageQueue {
             System.out.println("Channel disconnected while sending message: " + e.getMessage());
         }
     }
+
+
 
     private byte[] intToByteArray(int length) {
         ByteBuffer buffer = ByteBuffer.allocate(4);

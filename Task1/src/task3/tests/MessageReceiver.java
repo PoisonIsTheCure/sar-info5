@@ -9,9 +9,11 @@ public class MessageReceiver extends Thread {
     private QueueBroker queueBroker;
     private MessageQueue messageQueue;
     private int numberOfMessagesReceived;
+    private boolean bindRequestAccepted;
 
     public MessageReceiver() {
         this.numberOfMessagesReceived = 0;
+        this.bindRequestAccepted = false;
     }
 
     private QueueBroker getQueueBroker() {
@@ -22,25 +24,20 @@ public class MessageReceiver extends Thread {
     }
 
     private int getPort() {
-        return TestRunner.RECEIVING_PORT;
+        return MessageQueueTest.RECEIVING_PORT;
     }
 
     /**
      * Establish connection by creating a MessageQueue to communicate with the sender.
      */
-    public boolean establishConnection() {
-        try {
-            // Use the broker to accept the message queue connection
-            this.messageQueue = getQueueBroker().accept(getPort());
-            if (messageQueue == null) {
-                System.out.println("Failed to establish connection in MessageReceiver");
-                return false;
+    public void establishConnection() {
+        getQueueBroker().bind(getPort(), new QueueBroker.AcceptListener() {
+            @Override
+            public void accepted(MessageQueue messageQueue) {
+                MessageReceiver.this.bindRequestAccepted = true;
+                MessageReceiver.this.messageQueue = messageQueue;
             }
-        } catch (Exception e) {
-            System.out.println("Failed to establish connection in MessageReceiver: " + e.getMessage());
-            return false;
-        }
-        return true;
+        });
     }
 
     /**
@@ -77,6 +74,7 @@ public class MessageReceiver extends Thread {
      */
     public void disconnect() {
         if (messageQueue != null) {
+            this.queueBroker.unbind(getPort());
             messageQueue.close();
         }
     }
@@ -85,7 +83,7 @@ public class MessageReceiver extends Thread {
      * Simulates receiving multiple messages in a loop.
      */
     private void infiniteLoopReceiving() {
-        int numberOfMessages = TestRunner.NUMBER_OF_MESSAGES;
+        int numberOfMessages = MessageQueueTest.NUMBER_OF_MESSAGES;
         while (numberOfMessages > 0) {
             receiveMessage();
             try {
@@ -102,9 +100,13 @@ public class MessageReceiver extends Thread {
 
     @Override
     public void run() {
-        boolean connected = establishConnection();
-        if (!connected) {
-            return;
+        establishConnection();
+        if (!this.bindRequestAccepted) {
+            try {
+                Thread.sleep(1000); // Simulate a delay before retrying to connect
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         infiniteLoopReceiving();  // Start receiving messages in a loop

@@ -24,25 +24,27 @@ public class MessageSender extends Thread {
     }
 
     private int getPort() {
-        return TestRunner.SENDING_PORT;
+        return MessageQueueTest.SENDING_PORT;
     }
 
     /**
      * Establish connection by creating a MessageQueue to communicate with the receiver.
      */
     public boolean establishConnection() {
-        try {
-            // Use the broker to establish the message queue connection
-            this.messageQueue = getQueueBroker().connect(receiverBrokerName, getPort());
-            if (messageQueue == null) {
-                System.out.println("Failed to establish connection in MessageSender");
-                return false;
+        // Use the broker to establish the message queue connection
+         boolean connectionRequestSent = getQueueBroker().connect(receiverBrokerName, getPort(), new QueueBroker.ConnectListener() {
+            @Override
+            public void connected(MessageQueue messageQueue) {
+                MessageSender.this.messageQueue = messageQueue;
             }
-        } catch (Exception e) {
-            System.out.println("Failed to establish connection in MessageSender: " + e.getMessage());
-            return false;
-        }
-        return true;
+
+            @Override
+            public void refused() {
+                System.out.println("Failed to establish connection in MessageSender");
+            }
+         });
+
+         return connectionRequestSent;
     }
 
     /**
@@ -66,7 +68,7 @@ public class MessageSender extends Thread {
      * Simulates sending multiple messages in a loop.
      */
     private void infiniteLoopSending() {
-        int nbMessages = TestRunner.NUMBER_OF_MESSAGES;
+        int nbMessages = MessageQueueTest.NUMBER_OF_MESSAGES;
 
         while (nbMessages > 0) {
             sendMessage();
@@ -85,7 +87,11 @@ public class MessageSender extends Thread {
     public void run() {
         boolean connected = establishConnection();
         if (!connected) {
-            return;
+            try {
+                Thread.sleep(1000); // Simulate a delay before retrying to connect
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         infiniteLoopSending();  // Start sending messages in a loop
