@@ -1,9 +1,35 @@
-package task1.specification;
+package task3.specification;
 
 /**
  * Abstract class representing a message queue used for sending and receiving messages.
  */
 public abstract class MessageQueue {
+
+
+    interface Listener {
+
+        void received(byte[] msg);
+
+        void closed();
+    }
+
+
+    /**
+     * Interface for the listener that will be notified when a message is received or the queue is closed.
+     */
+    public abstract void setListener(Listener l);
+
+
+    /**
+     * Sends the requested message to the message queue.
+     *
+     * This method doesn't block the caller.
+     * It will send the message as soon as possible, meaning that the message may not be sent immediately, if
+     * other messages are being sent from the queue.
+     *
+     * @param bytes The byte array containing the message to send.
+     */
+    public abstract void send(byte[] bytes) throws DisconnectedException;
 
     /**
      * Sends the requested message to the message queue.

@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package task1;
+package task3;
 
 /**
  * This circular buffer of bytes can be used to pass bytes between two threads:

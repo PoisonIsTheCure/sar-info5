@@ -1,11 +1,8 @@
-package task1.implementation;
+package task3.implementation;
 
-import task1.specification.Broker;
+import task3.specification.Broker;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class BrokerManager {
     public HashMap<String,Broker> brokers = new HashMap<String,Broker>();

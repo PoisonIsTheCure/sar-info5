@@ -1,13 +1,11 @@
-package task1.implementation;
+package task3.implementation;
 
-import task1.specification.Broker;
-import task1.specification.MessageQueue;
-import task1.specification.QueueBroker;
-import task1.specification.Channel;
+import task3.specification.Broker;
+import task3.specification.MessageQueue;
+import task3.specification.QueueBroker;
+import task3.specification.Channel;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 public class QueueBrokerImpl extends QueueBroker {
 
@@ -54,6 +52,16 @@ public class QueueBrokerImpl extends QueueBroker {
         } catch (IOException e) {
             throw new IllegalStateException("Error connecting to broker: " + e.getMessage());
         }
+
+    }
+
+    @Override
+    public void bind(int port, String name) {
+
+    }
+
+    @Override
+    public void unbind(int port) {
 
     }
 }

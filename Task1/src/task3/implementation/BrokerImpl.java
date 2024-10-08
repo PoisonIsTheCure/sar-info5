@@ -1,13 +1,11 @@
-package task1.implementation;
+package task3.implementation;
 
-import task1.specification.Broker;
-import task1.specification.Channel;
+import task3.specification.Broker;
+import task3.specification.Channel;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.Map;
-import java.util.Queue;
 
 public class BrokerImpl extends Broker {
     private BrokerManager manager;

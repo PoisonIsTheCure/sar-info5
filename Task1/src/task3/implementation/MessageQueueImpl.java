@@ -1,16 +1,13 @@
-package task1.implementation;
+package task3.implementation;
 
-import task1.specification.Channel;
-import task1.specification.DisconnectedException;
-import task1.specification.MessageQueue;
+import task3.specification.Channel;
+import task3.specification.DisconnectedException;
+import task3.specification.MessageQueue;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.Queue;
 
-import java.util.LinkedList;
-import java.util.Queue;
 import java.util.concurrent.Semaphore;
 
 public class MessageQueueImpl extends MessageQueue {

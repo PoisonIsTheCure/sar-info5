@@ -1,8 +1,8 @@
-package task1.implementation;
+package task3.implementation;
 
-import task1.CircularBuffer;
-import task1.specification.Channel;
-import task1.specification.DisconnectedException;
+import task3.CircularBuffer;
+import task3.specification.Channel;
+import task3.specification.DisconnectedException;
 
 public class ChannelImpl extends Channel {
 
@@ -69,7 +69,7 @@ public class ChannelImpl extends Channel {
         for (int i = offset; i < offset + length; i++) {
             synchronized (receptionBuffer) {
                 while (this.receptionBuffer.empty()) {
-                    if (halfDisconnected) {
+                    if (halfDisconnected || this.disconnected) {
                         this.disconnected = true;
                         this.halfDisconnected = false;
                         throw new DisconnectedException("Channel is now fully disconnected after reading in-transit bytes");
@@ -98,6 +98,7 @@ public class ChannelImpl extends Channel {
             if (!this.disconnected) {
                 // only half-disconnect if not fully disconnected
                 this.halfDisconnected = true;
+                notify(); // Notify any waiting threads
             }
         }
     }
@@ -107,6 +108,7 @@ public class ChannelImpl extends Channel {
         synchronized (this) {
             this.disconnected = true;
             this.rdv.disconnect();
+            notify(); // Notify any waiting threads
         }
     }
 
