@@ -2,6 +2,14 @@ package task3.specification;
 
 public abstract class EventPump extends Thread {
 
+    private static EventPump eventPumpInstance = null;
+
+    private EventPump() {
+        EventPump.eventPumpInstance = this;
+    }
+
+    public abstract EventPump getInstance();
+
     /**
      * This method allows EventPump users to post events to the EventPump.
      *

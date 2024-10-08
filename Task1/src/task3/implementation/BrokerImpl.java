@@ -13,9 +13,9 @@ public class BrokerImpl extends Broker {
     // Stores the Rdv objects per port
     private final Map<Integer, Rdv> rdvMap;
 
-    public BrokerImpl(String name, BrokerManager manager) {
+    public BrokerImpl(String name) {
         super(name);
-        this.manager = manager;
+        this.manager = BrokerManager.getInstance();
         this.manager.addBroker(this);
         this.rdvMap = new HashMap<>();
     }

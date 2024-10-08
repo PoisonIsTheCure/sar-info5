@@ -16,15 +16,11 @@ public class MessageQueueTest {
 
     public static void main(String[] args) {
         // Initialize BrokerManager to handle both sender and receiver brokers
-        BrokerManager brokerManager = new BrokerManager();
-
-        // Create Brokers for sender and receiver
-        Broker senderBroker = new BrokerImpl("senderBroker", brokerManager);
-        Broker receiverBroker = new BrokerImpl("receiverBroker", brokerManager);
+        BrokerManager.getInstance();
 
         // Create QueueBrokers for sender and receiver
-        QueueBroker senderQueueBroker = new QueueBrokerImpl(senderBroker);
-        QueueBroker receiverQueueBroker = new QueueBrokerImpl(receiverBroker);
+        QueueBroker senderQueueBroker = new QueueBrokerImpl("senderBroker");
+        QueueBroker receiverQueueBroker = new QueueBrokerImpl("receiverBroker");
 
         // Start the MessageReceiver and MessageSender threads
         MessageReceiver receiverTester = new MessageReceiver();

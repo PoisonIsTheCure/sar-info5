@@ -7,7 +7,16 @@ import java.util.HashMap;
 public class BrokerManager {
     public HashMap<String,Broker> brokers = new HashMap<String,Broker>();
 
-    public BrokerManager() {
+    private static BrokerManager instance = null;
+
+    private BrokerManager() {
+    }
+
+    public static BrokerManager getInstance() {
+        if (instance == null) {
+            instance = new BrokerManager();
+        }
+        return instance;
     }
 
     public synchronized void addBroker(BrokerImpl broker) {

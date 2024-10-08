@@ -6,7 +6,7 @@ package task3.specification;
 public abstract class MessageQueue {
 
 
-    interface Listener {
+    public interface Listener {
 
         void received(byte[] msg);
 
