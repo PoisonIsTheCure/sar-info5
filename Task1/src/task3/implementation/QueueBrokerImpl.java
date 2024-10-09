@@ -1,17 +1,18 @@
 package task3.implementation;
 
-import task3.specification.Broker;
-import task3.specification.MessageQueue;
-import task3.specification.QueueBroker;
-import task3.specification.Channel;
+import task3.specification.*;
 
 import java.io.IOException;
 
 public class QueueBrokerImpl extends QueueBroker {
 
+    private EventPump eventPump;
+
     public QueueBrokerImpl(String name) {
         super(new BrokerImpl(name));
+        this.eventPump = EventPump.getInstance();
     }
+
 
     @Override
     public String name() {
@@ -59,17 +60,20 @@ public class QueueBrokerImpl extends QueueBroker {
 
     @Override
     public boolean connect(String name, int port, ConnectListener listener) {
-        return false;
+        ConnectEvent event = new ConnectEvent(name, port, listener);
+        eventPump.post(event);
+        return true;
     }
 
     @Override
     public void bind(int port, AcceptListener listener) {
-
+        BindEvent event = new BindEvent(this.broker,port, listener);
+        eventPump.post(event);
     }
 
     @Override
     public void unbind(int port) {
-
+        return;
     }
 
 

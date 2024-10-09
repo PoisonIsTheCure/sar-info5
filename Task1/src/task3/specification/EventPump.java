@@ -2,13 +2,19 @@ package task3.specification;
 
 public abstract class EventPump extends Thread {
 
-    private static EventPump eventPumpInstance = null;
+    protected static EventPump eventPumpInstance = null;
 
-    private EventPump() {
+    protected EventPump() {
         EventPump.eventPumpInstance = this;
     }
 
-    public abstract EventPump getInstance();
+    public static EventPump getInstance(){
+        return eventPumpInstance;
+    }
+
+    public static void setInstance(EventPump eventPumpInstance){
+        EventPump.eventPumpInstance = eventPumpInstance;
+    }
 
     /**
      * This method allows EventPump users to post events to the EventPump.
@@ -19,12 +25,6 @@ public abstract class EventPump extends Thread {
      */
     public abstract void post(Event event);
 
-    /**
-     * This method starts the EventPump.
-     *
-     * So it start processing the events in the queue.
-     */
-    public abstract void start();
 
     /**
      * This method stops and kill the EventPump.

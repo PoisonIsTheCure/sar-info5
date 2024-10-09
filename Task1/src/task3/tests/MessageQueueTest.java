@@ -1,10 +1,8 @@
 package task3.tests;
 
-import task3.implementation.BrokerImpl;
-import task3.implementation.BrokerManager;
-import task3.implementation.QueueBrokerImpl;
-import task3.implementation.TaskImpl;
+import task3.implementation.*;
 import task3.specification.Broker;
+import task3.specification.EventPump;
 import task3.specification.QueueBroker;
 import task3.specification.Task;
 
@@ -17,6 +15,11 @@ public class MessageQueueTest {
     public static void main(String[] args) {
         // Initialize BrokerManager to handle both sender and receiver brokers
         BrokerManager.getInstance();
+
+        // Initialize the EventPump
+        EventPumpImpl.createInstance();
+        EventPump eventPump = EventPump.getInstance();
+        eventPump.start();
 
         // Create QueueBrokers for sender and receiver
         QueueBroker senderQueueBroker = new QueueBrokerImpl("senderBroker");

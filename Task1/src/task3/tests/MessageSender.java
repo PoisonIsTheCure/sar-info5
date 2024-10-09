@@ -86,7 +86,11 @@ public class MessageSender extends Thread {
     @Override
     public void run() {
         boolean connected = establishConnection();
-        if (!connected) {
+        if (!connected){
+            System.out.println("Failed to establish connection in MessageSender");
+            return;
+        }
+        while (this.messageQueue == null) {
             try {
                 Thread.sleep(1000); // Simulate a delay before retrying to connect
             } catch (InterruptedException e) {

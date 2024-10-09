@@ -5,6 +5,7 @@ package task3.specification;
  */
 public abstract class MessageQueue {
 
+    protected Listener listener;
 
     public interface Listener {
 
@@ -46,11 +47,12 @@ public abstract class MessageQueue {
 
     /**
      * Receives a message from the message queue.
-     * If no message is available, this method will block until a message is received.
      *
-     * @return A byte array representing the received message.
+     * Will be notified by the listener when a message is received.
+     *
+     * @throws DisconnectedException If the message queue is closed.
      */
-    public abstract byte[] receive() throws DisconnectedException;
+    public abstract void receive() throws DisconnectedException;
 
     /**
      * Closes the message queue, releasing any resources associated with it.

@@ -2,6 +2,7 @@ package task3.implementation;
 
 import task3.specification.Channel;
 import task3.specification.DisconnectedException;
+import task3.specification.EventPump;
 import task3.specification.MessageQueue;
 
 import java.nio.ByteBuffer;
@@ -16,9 +17,28 @@ public class MessageQueueImpl extends MessageQueue {
     private final Queue<Message> messagesToSend;
     private final Queue<byte[]> receivedMessages;
     private volatile boolean isClosed;
+    private EventPump eventPump;
 
-    private final Semaphore sendSemaphore;
-    private final Semaphore receiveSemaphore;
+    private enum MessageReceiverState {
+        IDLE,
+        RECEIVING_LENGTH,
+        RECEIVING_MESSAGE
+    }
+
+    private enum MessageSenderState {
+        IDLE,
+        SENDING_LENGTH,
+        SENDING_MESSAGE
+    }
+
+    private MessageReceiverState receiverState;
+    private MessageSenderState senderState;
+
+    // messages length
+    private int lengthMessageToSend;
+    private int lengthMessageToReceive;
+
+
 
     // Worker threads to handle asynchronous sending and receiving
     private Thread senderWorker;
@@ -29,13 +49,9 @@ public class MessageQueueImpl extends MessageQueue {
         this.messagesToSend = new LinkedList<>();
         this.receivedMessages = new LinkedList<>();
         this.isClosed = false;
-
-        this.sendSemaphore = new Semaphore(0);  // Starts with 0 permits
-        this.receiveSemaphore = new Semaphore(0);  // Starts with 0 permits
-
-        // Start the sender and receiver worker threads
-        startSenderWorker();
-        startReceiverWorker();
+        this.eventPump = EventPump.getInstance();
+        this.receiverState = MessageReceiverState.IDLE;
+        this.senderState = MessageSenderState.IDLE;
     }
 
     @Override
@@ -49,39 +65,52 @@ public class MessageQueueImpl extends MessageQueue {
             throw new DisconnectedException("MessageQueue is closed. Cannot send messages.");
         }
 
-        Message message = new Message(bytes, offset, length);
-        synchronized (messagesToSend) {
-            messagesToSend.offer(message);
-        }
-
-        // Release a permit to indicate that a message is ready to be sent
-        sendSemaphore.release();
+        this.eventPump.post(new MessageSendEvent(bytes, offset, length, channel));
     }
 
     @Override
     public void send(byte[] bytes) throws DisconnectedException {
+        send(bytes, 0, bytes.length);
+    }
 
+    private void receiveMessageIteration() throws DisconnectedException {
+        byte[] message = null;
+        switch (receiverState) {
+            case IDLE:
+                receiverState = MessageReceiverState.RECEIVING_LENGTH;
+                this.eventPump.post(new MessageReceiveEvent(channel, 4, new MessageReceiveEvent.InternalListener() {
+                    @Override
+                    public void received(byte[] message) {
+                        MessageQueueImpl.this.lengthMessageToReceive = byteArrayToInt(message);
+                        MessageQueueImpl.this.receiverState = MessageReceiverState.RECEIVING_MESSAGE;
+                    }
+                }));
+                break;
+            case RECEIVING_LENGTH:
+                break;
+            case RECEIVING_MESSAGE:
+                message = new byte[lengthMessageToReceive];
+
+                this.eventPump.post(new MessageReceiveEvent(channel, lengthMessageToReceive, new MessageReceiveEvent.InternalListener() {
+                    @Override
+                    public void received(byte[] message) {
+                        receivedMessages.add(message);
+                        MessageQueueImpl.this.receiverState = MessageReceiverState.IDLE;
+                        MessageQueueImpl.this.listener.received(message);
+                    }
+                }));
+                receiverState = MessageReceiverState.IDLE;
+                break;
+        }
     }
 
     @Override
-    public byte[] receive() throws DisconnectedException {
+    public void receive() throws DisconnectedException {
         if (isClosed) {
             throw new DisconnectedException("MessageQueue is closed. Cannot receive messages.");
         }
-
-        try {
-            // Acquire a permit to ensure a message is available before proceeding
-            receiveSemaphore.acquire();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            if (isClosed) {
-                return null;  // Exit if interrupted due to closure
-            }
-        }
-
-        synchronized (receivedMessages) {
-            return receivedMessages.poll();  // Retrieve the message
-        }
+        receiveMessageIteration(); // Receive the message length
+        receiveMessageIteration(); // Receive the message, listener will be notified directly
     }
 
     @Override
@@ -114,88 +143,7 @@ public class MessageQueueImpl extends MessageQueue {
         return isClosed && channel.disconnected();
     }
 
-    // Worker thread that processes the message queue and sends messages asynchronously
-    private void startSenderWorker() {
-        senderWorker = new Thread(() -> {
-            while (!isClosed) {
-                try {
-                    // Acquire a permit, wait if no messages are available to send
-                    sendSemaphore.acquire();
-                } catch (InterruptedException e) {
-                    if (isClosed) {
-                        return;  // Exit if interrupted due to closure
-                    }
-                    Thread.currentThread().interrupt();  // Restore interrupted status
-                }
 
-                Message messageToSend;
-                synchronized (messagesToSend) {
-                    messageToSend = messagesToSend.poll();
-                }
-
-                if (messageToSend != null) {
-                    sendMessageToChannel(messageToSend);
-                }
-            }
-        });
-
-        senderWorker.start();  // Start the sender worker thread
-    }
-
-    // Worker thread that reads messages from the channel and adds them to the receivedMessages queue
-    private void startReceiverWorker() {
-        receiverWorker = new Thread(() -> {
-            while (!isClosed) {
-                try {
-                    byte[] lengthBuffer = new byte[4];
-                    int totalBytesRead = 0;
-
-                    // Read the message length (first 4 bytes)
-                    while (totalBytesRead < lengthBuffer.length) {
-                        int bytesRead = channel.read(lengthBuffer, totalBytesRead, lengthBuffer.length - totalBytesRead);
-                        if (bytesRead == -1) {
-                            throw new DisconnectedException("Failed to read message length, channel disconnected.");
-                        }
-                        totalBytesRead += bytesRead;
-                    }
-
-                    // Convert the byte array to an integer for message length
-                    int messageLength = byteArrayToInt(lengthBuffer);
-
-                    // Read the actual message
-                    byte[] messageBuffer = new byte[messageLength];
-                    totalBytesRead = 0;
-                    while (totalBytesRead < messageBuffer.length) {
-                        int bytesRead = channel.read(messageBuffer, totalBytesRead, messageBuffer.length - totalBytesRead);
-                        if (bytesRead == -1) {
-                            throw new DisconnectedException("Failed to read message, channel disconnected.");
-                        }
-                        totalBytesRead += bytesRead;
-                    }
-
-                    // Add the received message to the queue
-                    synchronized (receivedMessages) {
-                        receivedMessages.offer(messageBuffer);
-                    }
-
-                    // Release a permit to indicate that a new message has been received
-                    receiveSemaphore.release();
-
-                } catch (DisconnectedException e) {
-                    if (isClosed) {
-                        System.out.println("Channel disconnected : " + e.getMessage());
-                        return;  // Exit the thread if the queue is closed
-                    }
-
-                    // TODO: Check if the disconnection scenario is solid
-                    this.close();
-                    System.out.println("Channel disconnected : " + e.getMessage());
-                }
-            }
-        });
-
-        receiverWorker.start();  // Start the receiver worker thread
-    }
 
     // Helper method to send a message over the channel
     private void sendMessageToChannel(Message message) {

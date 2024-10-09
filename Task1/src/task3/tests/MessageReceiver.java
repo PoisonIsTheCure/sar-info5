@@ -46,13 +46,7 @@ public class MessageReceiver extends Thread {
     private void receiveMessage() {
         try {
             // Read the actual message
-            byte[] messageBuffer = messageQueue.receive();
-            if (messageBuffer == null) {
-                System.out.println("Failed to receive message in MessageReceiver");
-                return;
-            }
-
-            System.out.println("Received message (" + this.numberOfMessagesReceived + "): " + new String(messageBuffer));
+            messageQueue.receive();
 
         } catch (Exception e) {
             System.out.println("Error receiving message in MessageReceiver: " + e.getMessage());
@@ -101,13 +95,25 @@ public class MessageReceiver extends Thread {
     @Override
     public void run() {
         establishConnection();
-        if (!this.bindRequestAccepted) {
+        while (!this.bindRequestAccepted) {
             try {
                 Thread.sleep(1000); // Simulate a delay before retrying to connect
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
         }
+
+        this.messageQueue.setListener(new MessageQueue.Listener() {
+            @Override
+            public void received(byte[] msg) {
+                System.out.println("Received message (" + MessageReceiver.this.numberOfMessagesReceived + "): " + new String(msg));
+            }
+
+            @Override
+            public void closed() {
+                System.out.println("MessageQueue closed in MessageReceiver");
+            }
+        });
 
         infiniteLoopReceiving();  // Start receiving messages in a loop
     }
