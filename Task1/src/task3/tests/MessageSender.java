@@ -1,17 +1,16 @@
 package task3.tests;
 
-import task3.specification.MessageQueue;
-import task3.specification.QueueBroker;
-import task3.specification.Task;
+import task3.specification.*;
 
-public class MessageSender extends Thread {
+public class MessageSender extends ETask {
 
     private String message;
     private String receiverBrokerName;
     private QueueBroker queueBroker;
     private MessageQueue messageQueue;
 
-    public MessageSender(String message, String receiverBrokerName) {
+    public MessageSender(String message, String receiverBrokerName, EventPump pump) {
+        super(pump);
         this.message = message;
         this.receiverBrokerName = receiverBrokerName;
     }

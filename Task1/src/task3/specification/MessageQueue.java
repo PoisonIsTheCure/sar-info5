@@ -46,15 +46,6 @@ public abstract class MessageQueue {
     public abstract void send(byte[] bytes, int offset, int length) throws DisconnectedException;
 
     /**
-     * Receives a message from the message queue.
-     *
-     * Will be notified by the listener when a message is received.
-     *
-     * @throws DisconnectedException If the message queue is closed.
-     */
-    public abstract void receive() throws DisconnectedException;
-
-    /**
      * Closes the message queue, releasing any resources associated with it.
      * On calling this method, the message queue should no longer be used on the caller side.
      * Any further operations on the message queue after calling close() should throw an exception.
@@ -77,4 +68,9 @@ public abstract class MessageQueue {
      * @return true if the queue is fully closed, false otherwise.
      */
     public abstract boolean closed();
+
+    /**
+     * Get the listener
+     */
+    public abstract MessageQueue.Listener getListener();
 }

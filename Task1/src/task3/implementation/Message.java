@@ -1,7 +1,7 @@
 package task3.implementation;
 
 // Class to store the messages in the queue
-class Message {
+public class Message {
     private byte[] message;
     private int offset;
     private int length;

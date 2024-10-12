@@ -17,9 +17,7 @@ public class MessageQueueTest {
         BrokerManager.getInstance();
 
         // Initialize the EventPump
-        EventPumpImpl.createInstance();
-        EventPump eventPump = EventPump.getInstance();
-        eventPump.start();
+       EventPump eventPump = new EventPumpImpl();
 
         // Create QueueBrokers for sender and receiver
         QueueBroker senderQueueBroker = new QueueBrokerImpl("senderBroker");
@@ -27,15 +25,8 @@ public class MessageQueueTest {
 
         // Start the MessageReceiver and MessageSender threads
         MessageReceiver receiverTester = new MessageReceiver();
-        MessageSender senderTester = new MessageSender("Hello from MessageQueueTest!", "receiverBroker");
+        MessageSender senderTester = new MessageSender("Hello from MessageQueueTest!", "receiverBroker", eventPump);
 
-        // Run the receiver in a separate thread
-        Task receiverTask = new TaskImpl(receiverQueueBroker,receiverTester);
-        receiverTask.start();
-
-        // Run the sender in a separate thread
-        Thread senderTask = new TaskImpl(senderQueueBroker,senderTester);
-        senderTask.start();
 
         // Wait for both threads to complete their tasks
         try {

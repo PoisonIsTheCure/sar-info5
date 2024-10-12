@@ -7,6 +7,11 @@ public abstract class Task extends Thread {
 
     protected Runnable taskRunnable;
 
+    public Task(Runnable r){
+        this.broker = null;
+        this.queueBroker = null;
+    }
+
     public Task(Broker b, Runnable r){
         this.broker = b;
         this.taskRunnable = r;
@@ -29,7 +34,12 @@ public abstract class Task extends Thread {
      * @return Broker corresponding to the current Task or <code>null</code> if the Task is not associated with a Broker
      */
     public static Broker getBroker() throws IllegalStateException {
-        return ((Task) Thread.currentThread()).broker;
+        if (Thread.currentThread() instanceof Task && ((Task) Thread.currentThread()).broker != null) {
+            return ((Task) Thread.currentThread()).broker;
+        }
+        else {
+            throw new IllegalStateException("No Broker associated with the current Task");
+        }
     }
 
     /**
@@ -44,7 +54,12 @@ public abstract class Task extends Thread {
      * @return QueueBroker corresponding to the current Task, or <code>null</code> if the Task is not associated with a QueueBroker
      */
     public static QueueBroker getQueueBroker() throws IllegalStateException {
-        return ((Task) Thread.currentThread()).queueBroker;
+        if (Thread.currentThread() instanceof Task && ((Task) Thread.currentThread()).queueBroker != null) {
+            return ((Task) Thread.currentThread()).queueBroker;
+        }
+        else {
+            throw new IllegalStateException("No QueueBroker associated with the current Task");
+        }
     }
 
 }

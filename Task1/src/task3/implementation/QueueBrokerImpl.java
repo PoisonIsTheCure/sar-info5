@@ -7,10 +7,17 @@ import java.io.IOException;
 public class QueueBrokerImpl extends QueueBroker {
 
     private EventPump eventPump;
+    private Task brokerTask;
+    private ETask parentTask;
 
     public QueueBrokerImpl(String name) {
-        super(new BrokerImpl(name));
-        this.eventPump = EventPump.getInstance();
+        this.brokerTask = new TaskImpl(this, new Runnable() {
+            @Override
+            public void run() {
+                QueueBrokerImpl.super.broker = new BrokerImpl(name);
+            }
+        });
+        this.parentTask = ETask.task();
     }
 
 

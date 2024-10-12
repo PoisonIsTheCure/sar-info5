@@ -18,14 +18,6 @@ public abstract class QueueBroker {
         void refused();
     }
 
-    /**
-     * Constructor to initialize the QueueBroker with a Broker.
-     *
-     * @param broker The Broker instance to be associated with this QueueBroker.
-     */
-    public QueueBroker(Broker broker) {
-        this.broker = broker;
-    }
 
     /**
      * Retrieves the name of this QueueBroker (Broker name)

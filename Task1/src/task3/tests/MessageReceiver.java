@@ -4,7 +4,7 @@ import task3.specification.MessageQueue;
 import task3.specification.QueueBroker;
 import task3.specification.Task;
 
-public class MessageReceiver extends Thread {
+public class MessageReceiver {
 
     private QueueBroker queueBroker;
     private MessageQueue messageQueue;
