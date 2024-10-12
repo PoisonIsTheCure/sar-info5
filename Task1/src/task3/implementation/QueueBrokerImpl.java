@@ -27,43 +27,6 @@ public class QueueBrokerImpl extends QueueBroker {
     }
 
 
-//    @Override
-//    public MessageQueue accept(int port) {
-//        try {
-//            // Use the broker to accept a connection and get a Channel
-//            Channel channel = broker.accept(port);
-//            if (channel == null) {
-//                throw new IOException("Failed to accept connection on port " + port + " for " + name());
-//            }
-//
-//            // Create a MessageQueue that uses the Channel
-//            MessageQueue messageQueue = new MessageQueueImpl(channel);
-//            return messageQueue;
-//
-//        } catch (IOException e) {
-//            throw new IllegalStateException("Error accepting connection: " + e.getMessage());
-//        }
-//    }
-
-//    @Override
-//    public MessageQueue connect(String name, int port) {
-//        try {
-//            // Use the broker to connect to another broker's Channel
-//            Channel channel = broker.connect(name, port);
-//            if (channel == null) {
-//                throw new IOException("Failed to connect to " + name + " on port " + port + " for " + name());
-//            }
-//
-//            // Create a MessageQueue that uses the Channel
-//            MessageQueue messageQueue = new MessageQueueImpl(channel);
-//            return messageQueue;
-//
-//        } catch (IOException e) {
-//            throw new IllegalStateException("Error connecting to broker: " + e.getMessage());
-//        }
-//
-//    }
-
 
     @Override
     public boolean connect(String name, int port, ConnectListener listener) {
@@ -80,7 +43,8 @@ public class QueueBrokerImpl extends QueueBroker {
 
     @Override
     public void unbind(int port) {
-        return;
+        UnBindEvent event = new UnBindEvent(this.broker,port);
+        eventPump.post(event);
     }
 
 

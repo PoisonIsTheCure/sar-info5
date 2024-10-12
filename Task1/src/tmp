@@ -1,0 +1,1622 @@
+package task3.tests;
+
+import task3.implementation.*;
+import task3.specification.Broker;
+import task3.specification.EventPump;
+import task3.specification.QueueBroker;
+import task3.specification.Task;
+
+public class MessageQueueTest {
+
+    public static final int SENDING_PORT = 6923;
+    public static final int RECEIVING_PORT = 6923;
+    public static final int NUMBER_OF_MESSAGES = 10;
+
+    public static void main(String[] args) {
+        // Initialize BrokerManager to handle both sender and receiver brokers
+        BrokerManager.getInstance();
+
+        // Initialize the EventPump
+       EventPump eventPump = new EventPumpImpl();
+
+        // Create QueueBrokers for sender and receiver
+        QueueBroker senderQueueBroker = new QueueBrokerImpl("senderBroker");
+        QueueBroker receiverQueueBroker = new QueueBrokerImpl("receiverBroker");
+
+        // Start the MessageReceiver and MessageSender threads
+        MessageReceiver receiverTester = new MessageReceiver();
+        MessageSender senderTester = new MessageSender("Hello from MessageQueueTest!", "receiverBroker", eventPump);
+
+
+        // Wait for both threads to complete their tasks
+        try {
+            senderTask.join();
+            receiverTask.join();
+        } catch (InterruptedException e) {
+            System.out.println("MessageQueueTest interrupted while waiting for threads to finish.");
+        }
+
+        System.out.println("MessageQueueTest completed successfully.");
+    }
+}package task3.tests;
+
+import task3.specification.MessageQueue;
+import task3.specification.QueueBroker;
+import task3.specification.Task;
+
+public class MessageReceiver {
+
+    private QueueBroker queueBroker;
+    private MessageQueue messageQueue;
+    private int numberOfMessagesReceived;
+    private boolean bindRequestAccepted;
+
+    public MessageReceiver() {
+        this.numberOfMessagesReceived = 0;
+        this.bindRequestAccepted = false;
+    }
+
+    private QueueBroker getQueueBroker() {
+        if (queueBroker == null) {
+            queueBroker = Task.getQueueBroker();
+        }
+        return this.queueBroker;
+    }
+
+    private int getPort() {
+        return MessageQueueTest.RECEIVING_PORT;
+    }
+
+    /**
+     * Establish connection by creating a MessageQueue to communicate with the sender.
+     */
+    public void establishConnection() {
+        getQueueBroker().bind(getPort(), new QueueBroker.AcceptListener() {
+            @Override
+            public void accepted(MessageQueue messageQueue) {
+                MessageReceiver.this.bindRequestAccepted = true;
+                MessageReceiver.this.messageQueue = messageQueue;
+            }
+        });
+    }
+
+    /**
+     * Receives a message from the MessageQueue.
+     */
+    private void receiveMessage() {
+        try {
+            // Read the actual message
+            messageQueue.receive();
+
+        } catch (Exception e) {
+            System.out.println("Error receiving message in MessageReceiver: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Helper method to convert a byte array to an integer.
+     */
+    private int byteArrayToInt(byte[] byteArray) {
+        if (byteArray == null || byteArray.length != 4) {
+            throw new IllegalArgumentException("Invalid byte array size. Expected 4 bytes.");
+        }
+        return java.nio.ByteBuffer.wrap(byteArray).getInt();
+    }
+
+    /**
+     * Disconnects the MessageQueue after finishing receiving messages.
+     */
+    public void disconnect() {
+        if (messageQueue != null) {
+            this.queueBroker.unbind(getPort());
+            messageQueue.close();
+        }
+    }
+
+    /**
+     * Simulates receiving multiple messages in a loop.
+     */
+    private void infiniteLoopReceiving() {
+        int numberOfMessages = MessageQueueTest.NUMBER_OF_MESSAGES;
+        while (numberOfMessages > 0) {
+            receiveMessage();
+            try {
+                Thread.sleep(1000); // Simulate a delay between receiving messages
+            } catch (InterruptedException e) {
+                System.out.println("Failed to sleep in MessageReceiver");
+            }
+            numberOfMessages--;
+            this.numberOfMessagesReceived++;
+        }
+
+        disconnect();  // Disconnect after all messages have been received
+    }
+
+    @Override
+    public void run() {
+        establishConnection();
+        while (!this.bindRequestAccepted) {
+            try {
+                Thread.sleep(1000); // Simulate a delay before retrying to connect
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        this.messageQueue.setListener(new MessageQueue.Listener() {
+            @Override
+            public void received(byte[] msg) {
+                System.out.println("Received message (" + MessageReceiver.this.numberOfMessagesReceived + "): " + new String(msg));
+            }
+
+            @Override
+            public void closed() {
+                System.out.println("MessageQueue closed in MessageReceiver");
+            }
+        });
+
+        infiniteLoopReceiving();  // Start receiving messages in a loop
+    }
+}package task3.tests;
+
+import task3.specification.*;
+
+public class MessageSender extends ETask {
+
+    private String message;
+    private String receiverBrokerName;
+    private QueueBroker queueBroker;
+    private MessageQueue messageQueue;
+
+    public MessageSender(String message, String receiverBrokerName, EventPump pump) {
+        super(pump);
+        this.message = message;
+        this.receiverBrokerName = receiverBrokerName;
+    }
+
+    private QueueBroker getQueueBroker() {
+        if (queueBroker == null) {
+            this.queueBroker = Task.getQueueBroker();
+        }
+        return this.queueBroker;
+    }
+
+    private int getPort() {
+        return MessageQueueTest.SENDING_PORT;
+    }
+
+    /**
+     * Establish connection by creating a MessageQueue to communicate with the receiver.
+     */
+    public boolean establishConnection() {
+        // Use the broker to establish the message queue connection
+         boolean connectionRequestSent = getQueueBroker().connect(receiverBrokerName, getPort(), new QueueBroker.ConnectListener() {
+            @Override
+            public void connected(MessageQueue messageQueue) {
+                MessageSender.this.messageQueue = messageQueue;
+            }
+
+            @Override
+            public void refused() {
+                System.out.println("Failed to establish connection in MessageSender");
+            }
+         });
+
+         return connectionRequestSent;
+    }
+
+    /**
+     * Sends the message through the MessageQueue.
+     */
+    private void sendMessage() {
+        this.messageQueue.send(message.getBytes(), 0, message.length());
+    }
+
+
+    /**
+     * Disconnects the MessageQueue after finishing sending messages.
+     */
+    public void disconnect() {
+        if (messageQueue != null) {
+            messageQueue.close();
+        }
+    }
+
+    /**
+     * Simulates sending multiple messages in a loop.
+     */
+    private void infiniteLoopSending() {
+        int nbMessages = MessageQueueTest.NUMBER_OF_MESSAGES;
+
+        while (nbMessages > 0) {
+            sendMessage();
+            try {
+                Thread.sleep(1000); // Simulate a delay between sending messages
+            } catch (InterruptedException e) {
+                System.out.println("Failed to sleep in MessageSender");
+            }
+            nbMessages--;
+        }
+
+        disconnect();  // Disconnect after all messages have been sent
+    }
+
+    @Override
+    public void run() {
+        boolean connected = establishConnection();
+        if (!connected){
+            System.out.println("Failed to establish connection in MessageSender");
+            return;
+        }
+        while (this.messageQueue == null) {
+            try {
+                Thread.sleep(1000); // Simulate a delay before retrying to connect
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        infiniteLoopSending();  // Start sending messages in a loop
+    }
+}/*
+ * Copyright (C) 2023 Pr. Olivier Gruber
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package task3;
+
+/**
+ * This circular buffer of bytes can be used to pass bytes between two threads:
+ * one thread pushing bytes in the buffer and the other pulling bytes from the
+ * buffer. The buffer policy is FIFO: first byte in is the first byte out.
+ */
+public class CircularBuffer {
+    volatile int m_tail, m_head;
+    volatile byte m_bytes[];
+
+    public CircularBuffer(int capacity) {
+        m_bytes = new byte[capacity];
+        m_tail = m_head = 0;
+    }
+
+    /**
+     * @return true if this buffer is full, false otherwise
+     */
+    public boolean full() {
+        int next = (m_head + 1) % m_bytes.length;
+        return (next == m_tail);
+    }
+
+    /**
+     * @return true if this buffer is empty, false otherwise
+     */
+    public boolean empty() {
+        return (m_tail == m_head);
+    }
+
+    /**
+     * @param b: the byte to push in the buffer
+     * @return the next available byte
+     * @throws an IllegalStateException if full.
+     */
+    public void push(byte b) {
+        int next = (m_head + 1) % m_bytes.length;
+        if (next == m_tail)
+            throw new IllegalStateException();
+        m_bytes[m_head] = b;
+        m_head = next;
+    }
+
+    /**
+     * @return the next available byte
+     * @throws an IllegalStateException if empty.
+     */
+    public byte pull() {
+        if (m_tail == m_head)
+            throw new IllegalStateException();
+        int next = (m_tail + 1) % m_bytes.length;
+        byte bits = m_bytes[m_tail];
+        m_tail = next;
+        return bits;
+    }
+
+}package task3.specification;
+
+public class DisconnectedException extends RuntimeException {
+    public DisconnectedException(String message) {
+        super(message);
+    }
+}
+package task3.specification;
+
+import java.io.IOException;
+
+public abstract class Broker {
+
+    protected String name;
+
+    public Broker(String name) {
+        this.name = name;
+    }
+
+    /**
+     * A function that accept incoming connections, given the port number
+     * It return the communication channel
+     *
+     * @throws IOException if an I/O error occurs when creating the socket.
+     *
+     * @param port Number of connection port
+     * @return specification.Channel
+     */
+    public Channel accept(int port) throws IOException{
+        throw new IllegalStateException("Unimplemented Method");
+    }
+
+    /**
+     * Sends a connection request to the given port associated with the given broker
+     * name
+     *
+     * @throws IOException if an I/O error occurs when creating the socket.
+     *
+     * @param name connection name (The Name of the Broker to connect with)
+     * @param port connection port
+     * @return The Communication Channel
+     */
+    public Channel connect(String name, int port) throws IOException{
+        throw new IllegalStateException("Unimplemented Method");
+    }
+
+    /**
+     * Get the name of the broker
+     *
+     * @return The name of the broker
+     */
+    public String getName() {
+        return name;
+    }
+
+}
+package task3.specification;
+
+public abstract class EventPump extends Thread {
+
+
+    /**
+     * This method allows EventPump users to post events to the EventPump.
+     *
+     * The Event will be waiting in the queue until given to the Executor.
+     *
+     * @param event The event to be posted.
+     */
+    public abstract void post(Event event);
+
+
+    /**
+     * This method stops and kill the EventPump.
+     *
+     */
+    public abstract void kill();
+}
+package task3.specification;
+
+/**
+ * Abstract class representing a broker that manages message queues for communication.
+ */
+public abstract class QueueBroker {
+
+    protected Broker broker;
+
+    public interface AcceptListener {
+
+        void accepted(MessageQueue queue);
+
+    }
+
+    public interface ConnectListener {
+        void connected(MessageQueue messageQueue);
+        void refused();
+    }
+
+
+    /**
+     * Retrieves the name of this QueueBroker (Broker name)
+     *
+     * @return The name of the QueueBroker (Broker).
+     */
+    public abstract String name();
+
+
+    /**
+     * Connects to a broker on a specified port and returns a MessageQueue.
+     *
+     * This method is non-blocking and will return immediately.
+     * The MessageQueue will be set up to handle the connection once it is established.
+     *
+     * @param name The name of the broker to connect to.
+     * @param port The port on which to connect.
+     * @return The MessageQueue that is set up to handle the connection.
+     */
+    public abstract boolean connect(String name, int port, ConnectListener listener);
+
+
+    /**
+     * Binds a message queue to a specific port.
+     *
+     * @param port The port to bind the message queue to.
+     * @param listener The listener to be notified when a connection is accepted.
+     */
+    public abstract void bind(int port, AcceptListener listener);
+
+
+    /**
+     * Unbinds a message queue from a specific port.
+     *
+     * @param port The port to unbind the message queue from.
+     */
+    public abstract void unbind(int port);
+}package task3.specification;
+
+public abstract class Channel {
+    /**
+     * This function reads the given length from Channel.
+     *
+     * Note: this function is blocking function, meaning that it could block
+     * the thread in case if given length not read yet.
+     *
+     * @param bytes byte array to store values into
+     * @param offset offset where to start storing
+     * @param length length of data to be read
+     *
+     * @return n number of bytes that have been read, -1 if error occurred
+     */
+    public int read(byte[] bytes, int offset, int length){
+        throw new IllegalStateException("Unimplemented Method");
+    }
+
+    /**
+     * Sends a stream of bytes given an array a length of bytes to send and an offset
+     *
+     * Note : if length given is bigger than the array range, then only available range will
+     * be sent
+     *
+     * @param bytes is the array of bytes
+     * @param offset where to start sending
+     * @param length length of data to send
+     * @return Number of bytes sent successfully, -1 if an error occurred
+     */
+    public int write(byte[] bytes, int offset, int length){
+        throw new IllegalStateException("Unimplemented Method");
+    }
+
+    /**
+     * disconnect from current connection (if connected)
+     *
+     * Note that if user requested to disconnect while reading/writing on
+     * the channel, the channel will wait until the current job finish before disconnecting,
+     * but if user check status it will appear as disconnected and no new jobs will be accepted
+     *  (read and write requests will return -1)
+     */
+    public void disconnect(){
+        throw new IllegalStateException("Unimplemented Method");
+    }
+
+    /**
+     * Send a boolean evaluating true if connection is disconnected, and false if
+     * a connection is currently running
+     * @return boolean disconnected or not
+     */
+    public boolean disconnected(){
+        throw new IllegalStateException("Unimplemented Method");
+    }
+}
+package task3.specification;
+
+public interface Event {
+
+    /**
+     * This method is called when the event is triggered.
+     * It means that the event is ready to be processed.
+     *
+     * This Method should not be blocking.
+     *
+     * If this method is blocking, it will block the EventPump and the other events will not be processed.
+     * Any Threaded Mix should be handled by the Event itself.
+     */
+    void react();
+}
+package task3.specification;
+
+/**
+ * Abstract class representing a message queue used for sending and receiving messages.
+ */
+public abstract class MessageQueue {
+
+    protected Listener listener;
+
+    public interface Listener {
+
+        void received(byte[] msg);
+
+        void closed();
+    }
+
+
+    /**
+     * Interface for the listener that will be notified when a message is received or the queue is closed.
+     */
+    public abstract void setListener(Listener l);
+
+
+    /**
+     * Sends the requested message to the message queue.
+     *
+     * This method doesn't block the caller.
+     * It will send the message as soon as possible, meaning that the message may not be sent immediately, if
+     * other messages are being sent from the queue.
+     *
+     * @param bytes The byte array containing the message to send.
+     */
+    public abstract void send(byte[] bytes) throws DisconnectedException;
+
+    /**
+     * Sends the requested message to the message queue.
+     *
+     * This method doesn't block the caller.
+     * It will send the message as soon as possible, meaning that the message may not be sent immediately, if
+     * other messages are being sent from the queue.
+     *
+     * @param bytes  The byte array containing the message to send.
+     * @param offset The start offset in the byte array from which to begin sending.
+     * @param length The number of bytes to send from the byte array.
+     */
+    public abstract void send(byte[] bytes, int offset, int length) throws DisconnectedException;
+
+    /**
+     * Closes the message queue, releasing any resources associated with it.
+     * On calling this method, the message queue should no longer be used on the caller side.
+     * Any further operations on the message queue after calling close() should throw an exception.
+     *
+     * On the callee side, the user will be able to read messages that were sent before the queue was closed.
+     * But callee will not be able to send any more messages.
+     */
+    public abstract void close();
+
+    /**
+     * Checks whether the message queue is closed.
+     *
+     * This method can be used to check if the message queue is still open for sending and receiving messages.
+     * If the queue is closed locally, the method will return true.
+     * If the queue is closed remotely, the method will return true only after all remaining messages have been read.
+     *
+     * Although the queue was closed remotely, this method might return false if there are still messages to be read,
+     * but any write operation will throw a DisconnectedException.
+     *
+     * @return true if the queue is fully closed, false otherwise.
+     */
+    public abstract boolean closed();
+
+    /**
+     * Get the listener
+     */
+    public abstract MessageQueue.Listener getListener();
+}package task3.specification;
+
+public abstract class Task extends Thread {
+
+    protected Broker broker;
+    protected QueueBroker queueBroker;
+
+    protected Runnable taskRunnable;
+
+    public Task(Runnable r){
+        this.broker = null;
+        this.queueBroker = null;
+    }
+
+    public Task(Broker b, Runnable r){
+        this.broker = b;
+        this.taskRunnable = r;
+    }
+
+    public Task(QueueBroker qb, Runnable r){
+        this.queueBroker = qb;
+        this.taskRunnable = r;
+    }
+
+    /**
+     * Send the Broker associated to the current Task
+     * each task has its own broker.
+     *
+     * This function should be called by the task runnable
+     *
+     * @throws IllegalStateException if the method is called without an existing Task for
+     * the current thread
+     *
+     * @return Broker corresponding to the current Task or <code>null</code> if the Task is not associated with a Broker
+     */
+    public static Broker getBroker() throws IllegalStateException {
+        if (Thread.currentThread() instanceof Task && ((Task) Thread.currentThread()).broker != null) {
+            return ((Task) Thread.currentThread()).broker;
+        }
+        else {
+            throw new IllegalStateException("No Broker associated with the current Task");
+        }
+    }
+
+    /**
+     * Send the QueueBroker associated to the current Task
+     * each task has its own QueueBroker.
+     *
+     * This function should be called by the task runnable
+     *
+     * @throws IllegalStateException if the method is called without an existing Task for
+     * the current thread
+     *
+     * @return QueueBroker corresponding to the current Task, or <code>null</code> if the Task is not associated with a QueueBroker
+     */
+    public static QueueBroker getQueueBroker() throws IllegalStateException {
+        if (Thread.currentThread() instanceof Task && ((Task) Thread.currentThread()).queueBroker != null) {
+            return ((Task) Thread.currentThread()).queueBroker;
+        }
+        else {
+            throw new IllegalStateException("No QueueBroker associated with the current Task");
+        }
+    }
+
+}
+package task3.specification;
+
+public abstract class ETask {
+    private static ETask instance = null;
+
+    private EventPump pump;
+
+    public ETask(EventPump pump){
+        instance = this;
+    }
+
+    public void post(Event r){
+        //TODO
+    }
+
+    protected void setCurrentTask(ETask task){
+        instance = task;
+    }
+
+    public static ETask task(){
+        return instance;
+    }
+
+    public void kill(){
+        //TODO
+    }
+    public boolean killed(){
+        return false; // TODO
+    }
+}
+package task3.implementation;
+
+// Class to store the messages in the queue
+public class Message {
+    private byte[] message;
+    private int offset;
+    private int length;
+
+    public Message(byte[] message, int offset, int length) {
+        this.message = message;
+        this.offset = offset;
+        this.length = length;
+    }
+
+    public byte[] getMessage() {
+        return message;
+    }
+
+    public int getOffset() {
+        return offset;
+    }
+
+    public int getLength() {
+        return length;
+    }
+}
+
+package task3.implementation;
+
+import task3.specification.Broker;
+
+import java.util.HashMap;
+
+public class BrokerManager {
+    public HashMap<String,Broker> brokers = new HashMap<String,Broker>();
+
+    private static BrokerManager instance = null;
+
+    private BrokerManager() {
+    }
+
+    public static BrokerManager getInstance() {
+        if (instance == null) {
+            instance = new BrokerManager();
+        }
+        return instance;
+    }
+
+    public synchronized void addBroker(BrokerImpl broker) {
+        String name = broker.getName();
+        Broker exists = brokers.get(name);
+
+        if (exists != null) {
+            throw new IllegalArgumentException("Broker " + name + " already exists");
+        }
+
+        brokers.put(name, broker);
+    }
+
+    public synchronized void removeBroker(BrokerImpl broker) {
+        brokers.remove(broker);
+    }
+
+    public Broker getBroker(String name) {
+        return brokers.get(name);
+    }
+
+
+}
+package task3.implementation;
+
+import task3.specification.Broker;
+import task3.specification.Event;
+
+public class UnBindEvent implements Event {
+    private int port;
+    private Broker broker;
+    public UnBindEvent(Broker broker,int port) {
+        this.broker = broker;
+        this.port = port;
+    }
+    @Override
+    public void react() {
+        if (!BindEvent.acceptors.containsKey(broker.getName())) {
+            throw new RuntimeException("Broker not bound to any port");
+        }
+        if (!BindEvent.acceptors.get(broker.getName()).containsKey(port)) {
+            throw new RuntimeException("Port not bound");
+        }
+        BindEvent.AcceptWaiter waiter = BindEvent.acceptors.get(broker.getName()).get(port);
+        waiter.stop();
+        BindEvent.acceptors.get(broker.getName()).remove(port);
+    }
+    public int getPort() {
+        return port;
+    }
+    public Broker getBroker() {
+        return broker;
+    }
+}
+package task3.implementation;
+
+import task3.specification.*;
+
+import java.nio.ByteBuffer;
+import java.util.LinkedList;
+import java.util.Queue;
+
+public class MessageQueueImpl extends MessageQueue {
+
+    private final Channel channel;
+    private volatile boolean isClosed;
+    private ETask parentTask;
+
+    // Threaded workers
+    private final MQSender senderWorker;
+    private final MQReceiver receiverWorker;
+
+
+    public MessageQueueImpl(Channel channel) {
+        this.channel = channel;
+        this.isClosed = false;
+        this.senderWorker = new MQSender(this, channel);
+        this.receiverWorker = new MQReceiver(this, channel);
+
+        // Start the sender and receiver threads
+        new TaskImpl(senderWorker).start();
+        new TaskImpl(receiverWorker).start();
+    }
+
+    @Override
+    public void setListener(MessageQueue.Listener l) {
+        this.listener = l;
+    }
+
+    @Override
+    public void send(byte[] bytes, int offset, int length) throws DisconnectedException {
+        if (isClosed) {
+            throw new DisconnectedException("MessageQueue is closed. Cannot send messages.");
+        }
+        senderWorker.send(bytes, offset, length);
+    }
+
+    @Override
+    public void send(byte[] bytes) throws DisconnectedException {
+        send(bytes, 0, bytes.length);
+    }
+
+    @Override
+    public void close() {
+        isClosed = true;
+        channel.disconnect();  // Disconnect the channel
+    }
+
+    @Override
+    public boolean closed() {
+        return isClosed && channel.disconnected();
+    }
+
+    @Override
+    public Listener getListener() {
+        return listener;
+    }
+
+}package task3.implementation;
+
+import task3.specification.*;
+
+import java.io.IOException;
+
+public class QueueBrokerImpl extends QueueBroker {
+
+    private EventPump eventPump;
+    private Task brokerTask;
+    private ETask parentTask;
+
+    public QueueBrokerImpl(String name) {
+        this.brokerTask = new TaskImpl(this, new Runnable() {
+            @Override
+            public void run() {
+                QueueBrokerImpl.super.broker = new BrokerImpl(name);
+            }
+        });
+        this.parentTask = ETask.task();
+    }
+
+
+    @Override
+    public String name() {
+        return this.broker.getName();
+    }
+
+
+
+    @Override
+    public boolean connect(String name, int port, ConnectListener listener) {
+        ConnectEvent event = new ConnectEvent(name, port, listener);
+        eventPump.post(event);
+        return true;
+    }
+
+    @Override
+    public void bind(int port, AcceptListener listener) {
+        BindEvent event = new BindEvent(this.broker,port, listener);
+        eventPump.post(event);
+    }
+
+    @Override
+    public void unbind(int port) {
+        UnBindEvent event = new UnBindEvent(this.broker,port);
+        eventPump.post(event);
+    }
+
+
+}package task3.implementation;
+
+import task3.specification.Channel;
+import task3.specification.Event;
+import task3.specification.MessageQueue;
+
+public class MessageReceiveEvent implements Event {
+    private MessageQueue parentMessageQueue;
+    private Message message;
+
+    public interface InternalListener {
+        void received(byte[] message);
+    }
+
+    public MessageReceiveEvent(MessageQueue parentMessageQueue, Message message) {
+        this.parentMessageQueue = parentMessageQueue;
+        this.message = message;
+    }
+
+    @Override
+    public void react() {
+        parentMessageQueue.getListener().received(message.getMessage());
+    }
+
+}
+package task3.implementation;
+
+import task3.specification.Broker;
+import task3.specification.Channel;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+public class BrokerImpl extends Broker {
+    private BrokerManager manager;
+
+    // Stores the Rdv objects per port
+    private final Map<Integer, Rdv> rdvMap;
+
+    public BrokerImpl(String name) {
+        super(name);
+        this.manager = BrokerManager.getInstance();
+        this.manager.addBroker(this);
+        this.rdvMap = new HashMap<>();
+    }
+
+    @Override
+    public Channel accept(int port) throws IOException {
+        if (port < 0) {
+            throw new IOException("Invalid port number");
+        }
+
+        // Retrieve the Rdv of the port, or create a new one if it doesn't exist
+        Rdv acceptRdv;
+        synchronized (this.rdvMap)  {
+            acceptRdv = rdvMap.computeIfAbsent(port, k -> new Rdv(this));
+        }
+
+        // Notify the Rdv that the connection has been accepted
+        return acceptRdv.waitForConnect();
+    }
+
+    @Override
+    public Channel connect(String name, int port) throws IOException {
+        // First we need to check if the broker is available
+        BrokerImpl broker = (BrokerImpl) this.manager.getBroker(name);
+
+        if (broker == null) {
+            return null;
+        }
+
+        // Send the connection request and wait for it to be accepted in the Rdv class
+        Rdv rdv = broker.receiveConnectionRequest(this, port);
+        return rdv.waitForAccept();
+    }
+
+    public void closeBroker() {
+        this.manager.removeBroker(this);
+    }
+
+    public String getName() {
+        return this.name;
+    }
+
+    // Internal function between brokers
+    public Rdv receiveConnectionRequest(BrokerImpl senderBroker, int port) {
+
+        Rdv connectRdv;
+
+        synchronized (this.rdvMap) {
+            connectRdv = rdvMap.computeIfAbsent(port, k -> new Rdv(this));
+        }
+
+        // Allow Channel Creation by sending the Sender Broker Instance
+        connectRdv.setConnectBroker(senderBroker);
+
+        return connectRdv;
+    }
+
+    // Remove Rdv from the queue
+    public void removeRdvAndDisconnect(Rdv rdv) {
+        synchronized (this.rdvMap) {
+            for (Map.Entry<Integer, Rdv> entry : rdvMap.entrySet()) {
+                if (entry.getValue() == rdv) {
+                    rdvMap.remove(entry.getKey());
+                    break;
+                }
+            }
+        }
+    }
+}
+package task3.implementation;
+
+import task3.specification.Channel;
+import task3.specification.DisconnectedException;
+import task3.specification.MessageQueue;
+
+import java.nio.ByteBuffer;
+import java.util.Queue;
+
+public class MQSender implements Runnable {
+    private Channel channel;
+    private Queue<Message> messagesToSend;
+    private MessageQueue parentMessageQueue;
+
+    public MQSender(MessageQueue mq,Channel channel) {
+        this.parentMessageQueue = mq;
+        this.channel = channel;
+    }
+
+    public void send(byte[] bytes, int offset, int length) {
+        Message message = new Message(bytes, offset, length);
+        messagesToSend.add(message);
+    }
+
+
+
+    @Override
+    public void run() {
+        while (true){
+            if (messagesToSend.isEmpty()) {
+                try {
+                    Thread.sleep(1000); // TODO: Replace it by a Semaphore maybe ?
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            else {
+                Message message = messagesToSend.poll();
+                byte[] bytes = message.getMessage();
+                int offset = message.getOffset();
+                int length = message.getLength();
+                int totalBytesSent = 0;
+
+                try {
+                    // Send the message length (first 4 bytes)
+                    byte[] lengthBytes = intToByteArray(length);
+                    while (totalBytesSent < lengthBytes.length) {
+                        int bytesSent = channel.write(lengthBytes, totalBytesSent, lengthBytes.length - totalBytesSent);
+                        if (bytesSent == -1) {
+                            throw new DisconnectedException("Failed to send message length, channel disconnected.");
+                        }
+                        totalBytesSent += bytesSent;
+                    }
+
+                    // Send the actual message
+                    totalBytesSent = 0;
+
+                    while (totalBytesSent < length) {
+                        int bytesSent = channel.write(bytes, offset + totalBytesSent, length - totalBytesSent);
+                        if (bytesSent == -1) {
+                            throw new DisconnectedException("Failed to send message, channel disconnected.");
+                        }
+                        totalBytesSent += bytesSent;
+                    }
+                }
+                catch (DisconnectedException e) {
+                    System.out.println("Channel disconnected while sending message: " + e.getMessage());
+                }
+            }
+        }
+    }
+
+    private byte[] intToByteArray(int length) {
+        ByteBuffer buffer = ByteBuffer.allocate(4);
+        buffer.putInt(length);
+        return buffer.array();
+    }
+}
+package task3.implementation;
+
+import task3.specification.*;
+
+import java.io.IOException;
+import java.util.HashMap;
+
+public class BindEvent implements Event {
+
+    // Lists of currently active acceptors
+    static final HashMap<String, HashMap<Integer, AcceptWaiter>> acceptors = new HashMap<>();
+
+    private int port;
+    private QueueBroker.AcceptListener listener;
+    private Broker broker;
+    public BindEvent(Broker broker,int port, QueueBroker.AcceptListener listener) {
+        this.broker = broker;
+        this.port = port;
+        this.listener = listener;
+    }
+
+    class AcceptWaiter implements Runnable {
+        private final int port;
+        private final Broker broker;
+        private final QueueBroker.AcceptListener listener;
+        private boolean running = true;
+        public AcceptWaiter(Broker broker,int port, QueueBroker.AcceptListener listener) {
+            this.broker = broker;
+            this.port = port;
+            this.listener = listener;
+        }
+        @Override
+        public void run() {
+            while (running) {
+                try {
+                    Channel channel = broker.accept(port);
+                    MessageQueue messageQueue = new MessageQueueImpl(channel);
+                    listener.accepted(messageQueue);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+
+        /**
+         * Stop the thread (called by UnBindEvent)
+         */
+        public void stop() {
+            this.running = false;
+            Thread.currentThread().interrupt();
+        }
+    }
+
+
+    // BindEvent react function Implementation
+    @Override
+    public void react() {
+        if (!acceptors.containsKey(broker.getName())) {
+            acceptors.put(broker.getName(), new HashMap<>());
+        }
+        if (acceptors.get(broker.getName()).containsKey(port)) {
+            throw new RuntimeException("Port already bound");
+        }
+        AcceptWaiter acceptWaiter = new AcceptWaiter(broker,port, listener);
+        acceptors.get(broker.getName()).put(port, acceptWaiter);
+        new TaskImpl(acceptWaiter).start();
+    }
+
+    public int getPort() {
+        return port;
+    }
+
+    public String getName() {
+        return broker.getName();
+    }
+}
+package task3.implementation;
+
+import task3.specification.*;
+
+import java.io.IOException;
+
+public class ConnectEvent implements Event {
+
+    private String name;
+    private int port;
+    private QueueBroker.ConnectListener listener;
+
+    public ConnectEvent(String name , int port, QueueBroker.ConnectListener listener) {
+        this.name = name;
+        this.port = port;
+        this.listener = listener;
+    }
+
+    @Override
+    public void react() {
+        Broker broker = BrokerManager.getInstance().getBroker(name);
+        if (broker == null) {
+            listener.refused();
+        } else {
+            try {
+                Channel channel = broker.connect(name, port);
+                // Create a MessageQueue that uses the Channel
+                MessageQueue messageQueue = new MessageQueueImpl(channel);
+                listener.connected(messageQueue);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public int getPort() {
+        return port;
+    }
+}
+package task3.implementation;
+
+import task3.specification.Channel;
+import task3.specification.DisconnectedException;
+import task3.specification.ETask;
+import task3.specification.MessageQueue;
+
+import java.nio.ByteBuffer;
+import java.util.Queue;
+
+public class MQReceiver implements Runnable{
+    private Channel channel;
+    private MessageQueue parentMessageQueue;
+
+    public MQReceiver(MessageQueue mq, Channel channel) {
+        this.parentMessageQueue = mq;
+        this.channel = channel;
+    }
+
+    @Override
+    public void run() {
+        while (true) {
+            byte[] lengthBuffer = new byte[4];
+            int totalBytesRead = 0;
+
+            // Read the message length (first 4 bytes)
+            while (totalBytesRead < lengthBuffer.length) {
+                int bytesRead = channel.read(lengthBuffer, totalBytesRead, lengthBuffer.length - totalBytesRead);
+                if (bytesRead == -1) {
+                    throw new DisconnectedException("Failed to read message length, channel disconnected.");
+                }
+                totalBytesRead += bytesRead;
+            }
+
+            // Convert the byte array to an integer for message length
+            int messageLength = byteArrayToInt(lengthBuffer);
+
+            // Read the actual message
+            byte[] messageBuffer = new byte[messageLength];
+            totalBytesRead = 0;
+            while (totalBytesRead < messageBuffer.length) {
+                int bytesRead = channel.read(messageBuffer, totalBytesRead, messageBuffer.length - totalBytesRead);
+                if (bytesRead == -1) {
+                    throw new DisconnectedException("Failed to read message, channel disconnected.");
+                }
+                totalBytesRead += bytesRead;
+            }
+
+            Message message = new Message(messageBuffer, 0, messageBuffer.length);
+            ETask.task().post(new MessageReceiveEvent(parentMessageQueue, message));
+        }
+    }
+
+    private int byteArrayToInt(byte[] byteArray) {
+        if (byteArray == null || byteArray.length != 4) {
+            throw new IllegalArgumentException("Invalid byte array size. Expected 4 bytes.");
+        }
+        ByteBuffer buffer = ByteBuffer.wrap(byteArray);
+        return buffer.getInt();
+    }
+}
+package task3.implementation;
+
+import task3.specification.Channel;
+import task3.specification.Event;
+
+import java.nio.ByteBuffer;
+
+public class MessageSendEvent implements Event {
+    private byte[] message;
+    private int offset;
+    private int length;
+    private Channel channel;
+
+    public MessageSendEvent(byte[] message, int offset, int length, Channel channel) {
+        this.message = message;
+        this.offset = offset;
+        this.length = length;
+        this.channel = channel;
+    }
+
+    @Override
+    public void react() {
+        // Send the Length of the message as a byte array of 4 bytes
+        byte[] lengthBytes = intToByteArray(length);
+        channel.write(lengthBytes, 0, lengthBytes.length);
+        // Normally if everything is correctly set, the write doesn't block the thread
+        channel.write(message, offset, length);
+    }
+
+    private byte[] intToByteArray(int length) {
+        ByteBuffer buffer = ByteBuffer.allocate(4);
+        buffer.putInt(length);
+        return buffer.array();
+    }
+}
+package task3.implementation;
+
+import task3.specification.Event;
+import task3.specification.EventPump;
+
+import java.util.LinkedList;
+import java.util.Queue;
+
+public class EventPumpImpl extends EventPump {
+
+    private Queue<Event> eventsQueue;
+
+
+
+    public EventPumpImpl() {
+        this.eventsQueue = new LinkedList<>();
+    }
+
+
+    @Override
+    public void post(Event event) {
+        eventsQueue.add(event);
+    }
+
+    @Override
+    public void kill() {
+        eventsQueue.clear();
+    }
+
+    @Override
+    public void run() {
+        while (true) {
+            if (eventsQueue.isEmpty()) {
+                try {
+                    Thread.sleep(1000); // TODO: Replace it by a Semaphore maybe ?
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            else {
+                Event event = eventsQueue.poll();
+                event.react();
+            }
+        }
+    }
+}
+package task3.implementation;
+
+import task3.CircularBuffer;
+import task3.specification.Broker;
+import task3.specification.Channel;
+
+import java.util.concurrent.Semaphore;
+
+public class Rdv {
+
+    // Circular Buffer static Size
+    public static final int BUFFER_SIZE = 10;
+
+    // Semaphores to control the connection
+    private Semaphore waitingControlSemaphore;
+
+    // Buffers
+    private CircularBuffer receptionBuffer;
+    private CircularBuffer emissionBuffer;
+
+    private Broker connectBroker;
+    private Broker acceptBroker;
+
+    private ChannelImpl acceptChannel;
+    private ChannelImpl connectChannel;
+
+    private boolean channelsEstablished = false;
+
+    public Rdv(Broker acceptBroker) {
+        this.acceptBroker = acceptBroker;
+        this.waitingControlSemaphore = new Semaphore(1);
+    }
+
+    public synchronized void setConnectBroker(Broker connectBroker) {
+        this.connectBroker = connectBroker;
+        this.channelsEstablished = true;
+        establishChannels();
+    }
+
+    public Channel waitForAccept() {
+        // Called by the broker that requested the connection
+
+        waitForOtherBroker();
+
+        return connectChannel;
+    }
+
+    /**
+     * Wait for the connection to be Accepted
+     *
+     * Broker that Accept is the only one that can call this method
+     *
+     * @throws IllegalStateException when the connection is not accepted
+     */
+    public Channel waitForConnect() throws IllegalStateException {
+        // Called by the broker that accepted the connection
+
+        waitForOtherBroker();
+
+        return acceptChannel;
+    }
+
+
+    private void establishChannels() {
+        int capacity = BUFFER_SIZE;
+        this.receptionBuffer = new CircularBuffer(capacity);
+        this.emissionBuffer = new CircularBuffer(capacity);
+
+        this.acceptChannel = new ChannelImpl(receptionBuffer, emissionBuffer, this);
+        this.connectChannel = new ChannelImpl(emissionBuffer, receptionBuffer, this);
+
+    }
+
+    public void disconnect() {
+        // reset the channels to delete the Rdv
+        this.channelsEstablished = false;
+
+        // Notify the broker that the connection has been closed
+        this.acceptChannel.halfDisconnect();
+        this.connectChannel.halfDisconnect();
+
+        // Notify the broker that accepted the connection to remove the Rdv from the list
+        ((BrokerImpl) acceptBroker).removeRdvAndDisconnect(this);
+    }
+
+    public String getAcceptBrokerName() {
+        return acceptBroker.getName();
+    }
+
+    public String getConnectBrokerName() {
+        return connectBroker.getName();
+    }
+
+    private void waitForOtherBroker() {
+        try {
+            if (waitingControlSemaphore.tryAcquire()){
+                waitingControlSemaphore.acquire();
+            }else {
+                waitingControlSemaphore.release();
+                waitingControlSemaphore.release();
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+}
+package task3.implementation;
+
+import task3.specification.Broker;
+import task3.specification.QueueBroker;
+import task3.specification.Task;
+
+public class TaskImpl extends Task {
+
+    public TaskImpl(Runnable r) {
+        super(r);
+    }
+
+    public TaskImpl(Broker b, Runnable r) {
+        super(b, r);
+    }
+
+    public TaskImpl(QueueBroker b, Runnable r) {
+        super(b, r);
+    }
+
+    @Override
+    public void run() {
+        taskRunnable.run();
+    }
+}
+package task3.implementation;
+
+import task3.CircularBuffer;
+import task3.specification.Channel;
+import task3.specification.DisconnectedException;
+
+public class ChannelImpl extends Channel {
+
+    private CircularBuffer receptionBuffer;
+    private CircularBuffer emissionBuffer;
+    private Rdv rdv;
+    private boolean disconnected = false;        // Indicates fully disconnected state
+    private boolean halfDisconnected = false;    // Indicates that disconnection has been initiated but pending bytes are left
+
+    public ChannelImpl(CircularBuffer receptionBuffer, CircularBuffer emissionBuffer, Rdv rdv) {
+        this.receptionBuffer = receptionBuffer;
+        this.emissionBuffer = emissionBuffer;
+        this.rdv = rdv;
+    }
+
+    @Override
+    public int write(byte[] bytes, int offset, int length) throws DisconnectedException {
+        // Check if the channel is disconnected or half-disconnected
+        synchronized (emissionBuffer) {
+            if (this.disconnected) {
+                throw new DisconnectedException("Cannot write to a disconnected channel");
+            } else if (this.halfDisconnected) {
+                throw new DisconnectedException("The channel is half-disconnected (other end not reading) and cannot be written to");
+            }
+        }
+
+        int bytesWritten = 0;
+
+        // Write bytes one at a time, blocking if necessary
+        for (int i = offset; i < offset + length; i++) {
+            synchronized (emissionBuffer) {
+                while (this.emissionBuffer.full()) {
+                    try {
+                        emissionBuffer.wait(); // Wait until space is available
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+                this.emissionBuffer.push(bytes[i]);
+                bytesWritten++;
+                emissionBuffer.notifyAll(); // Notify any waiting threads
+            }
+
+            if (this.disconnected) {
+                throw new DisconnectedException("Channel is disconnected during write");
+            }
+        }
+
+        return bytesWritten;
+    }
+
+    @Override
+    public int read(byte[] bytes, int offset, int length) throws DisconnectedException {
+        // Check if the channel is fully disconnected
+        synchronized (receptionBuffer) {
+            if (this.disconnected) {
+                throw new DisconnectedException("Cannot read from a fully disconnected channel");
+            }
+        }
+
+        int bytesRead = 0;
+
+        // Read bytes one at a time, blocking if necessary
+        for (int i = offset; i < offset + length; i++) {
+            synchronized (receptionBuffer) {
+                while (this.receptionBuffer.empty()) {
+                    if (halfDisconnected || this.disconnected) {
+                        this.disconnected = true;
+                        this.halfDisconnected = false;
+                        throw new DisconnectedException("Channel is now fully disconnected after reading in-transit bytes");
+                    }
+                    try {
+                        receptionBuffer.wait(); // Wait until data is available
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+                bytes[bytesRead + offset] = this.receptionBuffer.pull();
+                bytesRead++;
+                receptionBuffer.notifyAll(); // Notify any waiting threads
+            }
+
+            if (this.disconnected) {
+                throw new DisconnectedException("Channel is disconnected during read");
+            }
+        }
+
+        return bytesRead;
+    }
+
+    public void halfDisconnect() {
+        synchronized (this) {
+            if (!this.disconnected) {
+                // only half-disconnect if not fully disconnected
+                this.halfDisconnected = true;
+                notify(); // Notify any waiting threads
+            }
+        }
+    }
+
+    @Override
+    public void disconnect() {
+        synchronized (this) {
+            this.disconnected = true;
+            this.rdv.disconnect();
+            notify(); // Notify any waiting threads
+        }
+    }
+
+    @Override
+    public boolean disconnected() {
+        return this.disconnected;
+    }
+}
