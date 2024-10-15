@@ -61,7 +61,7 @@ public class BindEvent implements Event {
         if (acceptors.get(broker.getName()).containsKey(port)) {
             throw new RuntimeException("Port already bound");
         }
-        AcceptWaiter acceptWaiter = new AcceptWaiter(broker,port, listener);
+        AcceptWaiter acceptWaiter = new AcceptWaiter(broker, port, listener);
         acceptors.get(broker.getName()).put(port, acceptWaiter);
         new TaskImpl(acceptWaiter).start();
     }

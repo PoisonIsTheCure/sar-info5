@@ -1,30 +1,34 @@
 package task3.tests;
 
-import task3.specification.MessageQueue;
-import task3.specification.QueueBroker;
-import task3.specification.Task;
+import task3.specification.*;
 
-public class MessageReceiver {
+public class MessageReceiver extends ETask implements Runnable{
 
-    private QueueBroker queueBroker;
-    private MessageQueue messageQueue;
-    private int numberOfMessagesReceived;
-    private boolean bindRequestAccepted;
+    private final QueueBroker queueBroker;
+    private volatile MessageQueue messageQueue;
+    private volatile State state;
 
-    public MessageReceiver() {
-        this.numberOfMessagesReceived = 0;
-        this.bindRequestAccepted = false;
+
+    // Message Counters
+    private volatile int receivedMessages = 0;
+    private final int totalMessagesToSend = MessageQueueTest.NUMBER_OF_MESSAGES;
+
+    enum State {
+        INIT,WAITING_CONNECTION,SETTING_LISTENER,CONNECTED, FINISHED, DISCONNECTED
+    }
+
+    public MessageReceiver(QueueBroker queueBroker, EventPump pump) {
+        super(pump);
+        this.queueBroker = queueBroker;
+        this.state = State.INIT;
     }
 
     private QueueBroker getQueueBroker() {
-        if (queueBroker == null) {
-            queueBroker = Task.getQueueBroker();
-        }
         return this.queueBroker;
     }
 
     private int getPort() {
-        return MessageQueueTest.RECEIVING_PORT;
+        return MessageQueueTest.PORT;
     }
 
     /**
@@ -34,87 +38,83 @@ public class MessageReceiver {
         getQueueBroker().bind(getPort(), new QueueBroker.AcceptListener() {
             @Override
             public void accepted(MessageQueue messageQueue) {
-                MessageReceiver.this.bindRequestAccepted = true;
                 MessageReceiver.this.messageQueue = messageQueue;
             }
         });
     }
 
     /**
-     * Receives a message from the MessageQueue.
+     * Echoes the received message back to the sender.
      */
-    private void receiveMessage() {
-        try {
-            // Read the actual message
-            messageQueue.receive();
-
-        } catch (Exception e) {
-            System.out.println("Error receiving message in MessageReceiver: " + e.getMessage());
+    private void echoMessage(byte[] message) {
+        if (state != State.CONNECTED) {
+            return;
         }
-    }
-
-    /**
-     * Helper method to convert a byte array to an integer.
-     */
-    private int byteArrayToInt(byte[] byteArray) {
-        if (byteArray == null || byteArray.length != 4) {
-            throw new IllegalArgumentException("Invalid byte array size. Expected 4 bytes.");
+        System.out.println("<-- MessageReceiver received message " + receivedMessages);
+        receivedMessages++;
+        messageQueue.send(message); // Send back the same message
+        if (receivedMessages == totalMessagesToSend) {
+            this.state = State.FINISHED;
         }
-        return java.nio.ByteBuffer.wrap(byteArray).getInt();
-    }
-
-    /**
-     * Disconnects the MessageQueue after finishing receiving messages.
-     */
-    public void disconnect() {
-        if (messageQueue != null) {
-            this.queueBroker.unbind(getPort());
-            messageQueue.close();
-        }
-    }
-
-    /**
-     * Simulates receiving multiple messages in a loop.
-     */
-    private void infiniteLoopReceiving() {
-        int numberOfMessages = MessageQueueTest.NUMBER_OF_MESSAGES;
-        while (numberOfMessages > 0) {
-            receiveMessage();
-            try {
-                Thread.sleep(1000); // Simulate a delay between receiving messages
-            } catch (InterruptedException e) {
-                System.out.println("Failed to sleep in MessageReceiver");
-            }
-            numberOfMessages--;
-            this.numberOfMessagesReceived++;
-        }
-
-        disconnect();  // Disconnect after all messages have been received
     }
 
     @Override
     public void run() {
-        establishConnection();
-        while (!this.bindRequestAccepted) {
-            try {
-                Thread.sleep(1000); // Simulate a delay before retrying to connect
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+        switch (state) {
+            case INIT:
+                establishConnection();
+                state = State.WAITING_CONNECTION;
+                break;
+            case WAITING_CONNECTION:
+                if (messageQueue != null) {
+                    state = State.SETTING_LISTENER;
+                }
+                break;
+            case SETTING_LISTENER:
+                // Set the Listener for receiving messages
+                messageQueue.setListener(new MessageQueue.Listener() {
+                    @Override
+                    public void received(byte[] msg) {
+                        echoMessage(msg);
+                    }
+
+                    @Override
+                    public void closed() {
+                        state = State.DISCONNECTED;
+                    }
+
+                });
+                state = State.CONNECTED;
+                MessageQueueTest.logger.info("MessageReceiver is connected and listening");
+                break;
+
+            case FINISHED:
+                if (receivedMessages == totalMessagesToSend) {
+                    System.out.println("MessageReceiver received and echoed all messages");
+                    state = State.DISCONNECTED;
+                }
+                break;
+            case DISCONNECTED:
+                MessageQueueTest.logger.info("MessageReceiver is disconnected");
+                queueBroker.unbind(getPort());
+                this.post(new Event() {
+                    @Override
+                    public void react() {
+                        ETask.runningTasks.remove(MessageReceiver.this);
+                    }
+                });
+                queueBroker.unbind(getPort());
+                MessageReceiver.this.post(new Event() {
+                    @Override
+                    public void react() {
+                        messageQueue.close();
+                    }
+                }
+                );
+                this.kill();
+                break;
+            default:
+                break;
         }
-
-        this.messageQueue.setListener(new MessageQueue.Listener() {
-            @Override
-            public void received(byte[] msg) {
-                System.out.println("Received message (" + MessageReceiver.this.numberOfMessagesReceived + "): " + new String(msg));
-            }
-
-            @Override
-            public void closed() {
-                System.out.println("MessageQueue closed in MessageReceiver");
-            }
-        });
-
-        infiniteLoopReceiving();  // Start receiving messages in a loop
     }
 }

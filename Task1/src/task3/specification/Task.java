@@ -8,8 +8,7 @@ public abstract class Task extends Thread {
     protected Runnable taskRunnable;
 
     public Task(Runnable r){
-        this.broker = null;
-        this.queueBroker = null;
+        this.taskRunnable = r;
     }
 
     public Task(Broker b, Runnable r){

@@ -1,16 +1,25 @@
 package task3.specification;
 
-public abstract class ETask {
+import java.util.ArrayList;
+import java.util.List;
+
+public abstract class ETask implements Runnable{
     private static ETask instance = null;
+    private boolean iskilled = false;
+
+    // Current running tasks
+    public static List<ETask> runningTasks = new ArrayList<ETask>();
 
     private EventPump pump;
 
     public ETask(EventPump pump){
         instance = this;
+        this.pump = pump;
+        runningTasks.add(this);
     }
 
     public void post(Event r){
-        //TODO
+        pump.post(r);
     }
 
     protected void setCurrentTask(ETask task){
@@ -22,9 +31,16 @@ public abstract class ETask {
     }
 
     public void kill(){
-        //TODO
+        this.setCurrentTask(null);
+        this.iskilled = true;
+        pump.post(new Event() {
+            @Override
+            public void react() {
+                runningTasks.remove(ETask.this);
+            }
+        });
     }
     public boolean killed(){
-        return false; // TODO
+        return this.iskilled;
     }
 }

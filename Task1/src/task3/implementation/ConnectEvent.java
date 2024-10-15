@@ -9,28 +9,26 @@ public class ConnectEvent implements Event {
     private String name;
     private int port;
     private QueueBroker.ConnectListener listener;
+    private Broker requestBroker;
 
-    public ConnectEvent(String name , int port, QueueBroker.ConnectListener listener) {
+    public ConnectEvent(String name , int port, QueueBroker.ConnectListener listener, Broker requestBroker) {
         this.name = name;
         this.port = port;
         this.listener = listener;
+        this.requestBroker = requestBroker;
     }
 
     @Override
     public void react() {
-        Broker broker = BrokerManager.getInstance().getBroker(name);
-        if (broker == null) {
-            listener.refused();
-        } else {
+        new TaskImpl(() -> {
             try {
-                Channel channel = broker.connect(name, port);
-                // Create a MessageQueue that uses the Channel
+                Channel channel = requestBroker.connect(name, port);
                 MessageQueue messageQueue = new MessageQueueImpl(channel);
                 listener.connected(messageQueue);
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                listener.refused();
             }
-        }
+        }).start();
     }
 
     public String getName() {

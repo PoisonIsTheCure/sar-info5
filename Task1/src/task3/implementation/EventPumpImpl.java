@@ -5,10 +5,12 @@ import task3.specification.EventPump;
 
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.concurrent.Semaphore;
 
 public class EventPumpImpl extends EventPump {
 
-    private Queue<Event> eventsQueue;
+    private final Queue<Event> eventsQueue;
+    private Semaphore semaphore = new Semaphore(0);
 
 
 
@@ -20,6 +22,7 @@ public class EventPumpImpl extends EventPump {
     @Override
     public void post(Event event) {
         eventsQueue.add(event);
+        semaphore.release();
     }
 
     @Override
@@ -30,16 +33,12 @@ public class EventPumpImpl extends EventPump {
     @Override
     public void run() {
         while (true) {
-            if (eventsQueue.isEmpty()) {
-                try {
-                    Thread.sleep(1000); // TODO: Replace it by a Semaphore maybe ?
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-            else {
+            try {
+                semaphore.acquire(); // wait for an event to be posted
                 Event event = eventsQueue.poll();
                 event.react();
+            } catch (InterruptedException e) {
+                break;
             }
         }
     }

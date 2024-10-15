@@ -47,7 +47,7 @@ public class MQReceiver implements Runnable{
             }
 
             Message message = new Message(messageBuffer, 0, messageBuffer.length);
-            ETask.task().post(new MessageReceiveEvent(parentMessageQueue, message));
+            parentMessageQueue.getListener().received(message.getMessage());
         }
     }
 

@@ -6,18 +6,8 @@ import java.io.IOException;
 
 public class QueueBrokerImpl extends QueueBroker {
 
-    private EventPump eventPump;
-    private Task brokerTask;
-    private ETask parentTask;
-
     public QueueBrokerImpl(String name) {
-        this.brokerTask = new TaskImpl(this, new Runnable() {
-            @Override
-            public void run() {
-                QueueBrokerImpl.super.broker = new BrokerImpl(name);
-            }
-        });
-        this.parentTask = ETask.task();
+       super.broker = new BrokerImpl(name);
     }
 
 
@@ -30,21 +20,21 @@ public class QueueBrokerImpl extends QueueBroker {
 
     @Override
     public boolean connect(String name, int port, ConnectListener listener) {
-        ConnectEvent event = new ConnectEvent(name, port, listener);
-        eventPump.post(event);
+        ConnectEvent event = new ConnectEvent(name, port, listener, this.broker);
+        ETask.task().post(event);
         return true;
     }
 
     @Override
     public void bind(int port, AcceptListener listener) {
         BindEvent event = new BindEvent(this.broker,port, listener);
-        eventPump.post(event);
+        ETask.task().post(event);
     }
 
     @Override
     public void unbind(int port) {
         UnBindEvent event = new UnBindEvent(this.broker,port);
-        eventPump.post(event);
+        ETask.task().post(event);
     }
 
 

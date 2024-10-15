@@ -5,6 +5,7 @@ import task3.specification.DisconnectedException;
 import task3.specification.MessageQueue;
 
 import java.nio.ByteBuffer;
+import java.util.LinkedList;
 import java.util.Queue;
 
 public class MQSender implements Runnable {
@@ -15,6 +16,7 @@ public class MQSender implements Runnable {
     public MQSender(MessageQueue mq,Channel channel) {
         this.parentMessageQueue = mq;
         this.channel = channel;
+        this.messagesToSend = new LinkedList<Message>();
     }
 
     public void send(byte[] bytes, int offset, int length) {
