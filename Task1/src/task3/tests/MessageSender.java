@@ -115,26 +115,12 @@ public class MessageSender extends ETask implements Runnable {
                 break;
 
             case DISCONNECTING:
-
-                MessageQueueTest.logger.info("MessageSender is disconnected");
-
-                // remove the task from the running tasks list
-                this.post(new Event() {
-                    @Override
-                    public void react() {
-                        ETask.runningTasks.remove(MessageSender.this);
-                    }
-                });
-
-                MessageSender.this.post(new Event() {
-                    @Override
-                    public void react() {
-                        messageQueue.close();
-                    }
-                });
-                this.kill();
-
+                MessageQueueTest.logger.info("MessageSender is disconnecting");
                 state = State.DEAD;
+                break;
+            case DEAD:
+                MessageQueueTest.logger.info("MessageSender is dead");
+                this.kill();
                 break;
             default:
                 break;

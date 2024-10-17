@@ -95,19 +95,13 @@ public class MessageReceiver extends ETask implements Runnable{
                 }
                 break;
             case DISCONNECTING:
-
-                MessageQueueTest.logger.info("MessageReceiver is disconnected");
+                MessageQueueTest.logger.info("MessageReceiver is disconnecting");
                 queueBroker.unbind(getPort());
-
-                // Remove the task from runningTasks
-                this.post(new GeneralEvent(() -> ETask.runningTasks.remove(this)));
-
-                // Close the messageQueue
-                MessageReceiver.this.post(new GeneralEvent(() -> messageQueue.close()));
-
-                // Kill the task
-                this.kill();
                 state = State.DEAD;
+                break;
+            case DEAD:
+                MessageQueueTest.logger.info("MessageReceiver is dead");
+                this.kill();
                 break;
             default:
                 break;

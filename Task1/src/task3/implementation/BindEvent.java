@@ -38,6 +38,9 @@ public class BindEvent implements Event {
                     channel = broker.accept(port);
                     MessageQueue messageQueue = new MessageQueueImpl(channel);
                     listener.accepted(messageQueue);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt(); // Preserve interrupt status
+                    break; // Exit the loop
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }

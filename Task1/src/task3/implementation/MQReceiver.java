@@ -21,46 +21,45 @@ public class MQReceiver implements Runnable{
     @Override
     public void run() {
         while (running) {
-            byte[] lengthBuffer = new byte[4];
-            int totalBytesRead = 0;
+            try {
+                byte[] lengthBuffer = new byte[4];
+                int totalBytesRead = 0;
 
-            // Read the message length (first 4 bytes)
-            while (totalBytesRead < lengthBuffer.length) {
-                int bytesRead = 0;
-                try {
-                    bytesRead = channel.read(lengthBuffer, totalBytesRead, lengthBuffer.length - totalBytesRead);
-                } catch (DisconnectedException e) {
-                    Thread.currentThread().interrupt();
-                }
-                if (bytesRead == -1) {
-                    throw new DisconnectedException("Failed to read message length, channel disconnected.");
-                }
-                totalBytesRead += bytesRead;
-            }
-
-            // Convert the byte array to an integer for message length
-            int messageLength = byteArrayToInt(lengthBuffer);
-
-            // Read the actual message
-            byte[] messageBuffer = new byte[messageLength];
-            totalBytesRead = 0;
-            while (totalBytesRead < messageBuffer.length) {
-                int bytesRead = 0;
-                try {
-                    bytesRead = channel.read(messageBuffer, totalBytesRead, messageBuffer.length - totalBytesRead);
-                } catch (DisconnectedException e) {
-                    Thread.currentThread().interrupt();
+                // Read the message length (first 4 bytes)
+                while (totalBytesRead < lengthBuffer.length) {
+                    int bytesRead = channel.read(lengthBuffer, totalBytesRead, lengthBuffer.length - totalBytesRead);
+                    if (bytesRead == -1) {
+                        throw new DisconnectedException("Failed to read message length, channel disconnected.");
+                    }
+                    totalBytesRead += bytesRead;
                 }
 
-                if (bytesRead == -1) {
-                    parentMessageQueue.getListener().closed();
-                    throw new DisconnectedException("Failed to read message, channel disconnected.");
-                }
-                totalBytesRead += bytesRead;
-            }
+                // Convert the byte array to an integer for message length
+                int messageLength = byteArrayToInt(lengthBuffer);
 
-            Message message = new Message(messageBuffer, 0, messageBuffer.length);
-            parentMessageQueue.getListener().received(message.getMessage());
+                // Read the actual message
+                byte[] messageBuffer = new byte[messageLength];
+                totalBytesRead = 0;
+                while (totalBytesRead < messageBuffer.length) {
+                    int bytesRead = channel.read(messageBuffer, totalBytesRead, messageBuffer.length - totalBytesRead);
+
+                    if (bytesRead == -1) {
+                        parentMessageQueue.getListener().closed();
+                        throw new DisconnectedException("Failed to read message, channel disconnected.");
+                    }
+                    totalBytesRead += bytesRead;
+                }
+
+                Message message = new Message(messageBuffer, 0, messageBuffer.length);
+                parentMessageQueue.getListener().received(message.getMessage());
+
+        } catch (DisconnectedException e) {
+            parentMessageQueue.getListener().closed();
+            running = false; // Exit the loop
+        } catch (Exception e) {
+            e.printStackTrace();
+            running = false;
+        }
         }
     }
 

@@ -21,7 +21,7 @@ public class BrokerImpl extends Broker {
     }
 
     @Override
-    public Channel accept(int port) throws IOException {
+    public Channel accept(int port) throws IOException, InterruptedException {
         if (port < 0) {
             throw new IOException("Invalid port number");
         }
@@ -37,7 +37,7 @@ public class BrokerImpl extends Broker {
     }
 
     @Override
-    public Channel connect(String name, int port) throws IOException {
+    public Channel connect(String name, int port) throws IOException, InterruptedException {
         // First we need to check if the broker is available
         BrokerImpl broker = (BrokerImpl) this.manager.getBroker(name);
 

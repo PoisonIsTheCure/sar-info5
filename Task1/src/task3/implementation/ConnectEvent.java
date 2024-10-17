@@ -27,6 +27,8 @@ public class ConnectEvent implements Event {
                 listener.connected(messageQueue);
             } catch (IOException e) {
                 listener.refused();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
         }).start();
     }

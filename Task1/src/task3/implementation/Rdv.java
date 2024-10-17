@@ -37,7 +37,7 @@ public class Rdv {
         establishChannels();
     }
 
-    public Channel waitForAccept() {
+    public Channel waitForAccept() throws InterruptedException {
         // Called by the broker that requested the connection
 
         waitForOtherBroker();
@@ -52,7 +52,7 @@ public class Rdv {
      *
      * @throws IllegalStateException when the connection is not accepted
      */
-    public Channel waitForConnect() throws IllegalStateException {
+    public Channel waitForConnect() throws IllegalStateException, InterruptedException {
         // Called by the broker that accepted the connection
 
         waitForOtherBroker();
@@ -91,16 +91,12 @@ public class Rdv {
         return connectBroker.getName();
     }
 
-    private void waitForOtherBroker() {
-        try {
-            if (waitingControlSemaphore.tryAcquire()){
-                waitingControlSemaphore.acquire();
-            }else {
-                waitingControlSemaphore.release();
-                waitingControlSemaphore.release();
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+    private void waitForOtherBroker() throws InterruptedException {
+        if (waitingControlSemaphore.tryAcquire()){
+            waitingControlSemaphore.acquire();
+        }else {
+            waitingControlSemaphore.release();
+            waitingControlSemaphore.release();
         }
     }
 }

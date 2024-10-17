@@ -19,7 +19,7 @@ public abstract class Broker {
      * @param port Number of connection port
      * @return specification.Channel
      */
-    public Channel accept(int port) throws IOException{
+    public Channel accept(int port) throws IOException, InterruptedException {
         throw new IllegalStateException("Unimplemented Method");
     }
 
@@ -33,7 +33,7 @@ public abstract class Broker {
      * @param port connection port
      * @return The Communication Channel
      */
-    public Channel connect(String name, int port) throws IOException{
+    public Channel connect(String name, int port) throws IOException, InterruptedException {
         throw new IllegalStateException("Unimplemented Method");
     }
 
