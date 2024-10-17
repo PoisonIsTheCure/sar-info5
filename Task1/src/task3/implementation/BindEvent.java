@@ -4,11 +4,12 @@ import task3.specification.*;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class BindEvent implements Event {
 
     // Lists of currently active acceptors
-    static final HashMap<String, HashMap<Integer, AcceptWaiter>> acceptors = new HashMap<>();
+    static final ConcurrentHashMap<String, HashMap<Integer, Task>> acceptors = new ConcurrentHashMap<>();
 
     private int port;
     private QueueBroker.AcceptListener listener;
@@ -19,11 +20,11 @@ public class BindEvent implements Event {
         this.listener = listener;
     }
 
-    class AcceptWaiter implements Runnable {
+    static class AcceptWaiter implements Runnable {
         private final int port;
         private final Broker broker;
         private final QueueBroker.AcceptListener listener;
-        private boolean running = true;
+
         public AcceptWaiter(Broker broker,int port, QueueBroker.AcceptListener listener) {
             this.broker = broker;
             this.port = port;
@@ -31,9 +32,10 @@ public class BindEvent implements Event {
         }
         @Override
         public void run() {
-            while (running) {
+            while (true) {
+                Channel channel = null;
                 try {
-                    Channel channel = broker.accept(port);
+                    channel = broker.accept(port);
                     MessageQueue messageQueue = new MessageQueueImpl(channel);
                     listener.accepted(messageQueue);
                 } catch (IOException e) {
@@ -42,13 +44,6 @@ public class BindEvent implements Event {
             }
         }
 
-        /**
-         * Stop the thread (called by UnBindEvent)
-         */
-        public void stop() {
-            this.running = false;
-            Thread.currentThread().interrupt();
-        }
     }
 
 
@@ -62,8 +57,9 @@ public class BindEvent implements Event {
             throw new RuntimeException("Port already bound");
         }
         AcceptWaiter acceptWaiter = new AcceptWaiter(broker, port, listener);
-        acceptors.get(broker.getName()).put(port, acceptWaiter);
-        new TaskImpl(acceptWaiter).start();
+        Task task = new TaskImpl(broker, acceptWaiter);
+        acceptors.get(broker.getName()).put(port, task);
+        task.start();
     }
 
     public int getPort() {

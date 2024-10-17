@@ -100,7 +100,7 @@ public class Rdv {
                 waitingControlSemaphore.release();
             }
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            Thread.currentThread().interrupt();
         }
     }
 }

@@ -17,7 +17,7 @@ public class MessageSender extends ETask implements Runnable {
     private int totalMessagesToSend = MessageQueueTest.NUMBER_OF_MESSAGES;
 
     enum State {
-        INIT, WAITING_CONNECTION, SETTING_LISTENER, FINISHED, CONNECTED, DISCONNECTED
+        INIT, WAITING_CONNECTION, SETTING_LISTENER, FINISHED, CONNECTED, DISCONNECTING, DEAD
     }
 
     public MessageSender(String message, String receiverBrokerName, EventPump pump, QueueBroker queueBroker) {
@@ -49,7 +49,7 @@ public class MessageSender extends ETask implements Runnable {
             @Override
             public void refused() {
                 System.out.println("Failed to establish connection in MessageSender");
-                state = State.DISCONNECTED;
+                state = State.DISCONNECTING;
             }
         });
     }
@@ -96,7 +96,7 @@ public class MessageSender extends ETask implements Runnable {
 
                     @Override
                     public void closed() {
-                        state = State.DISCONNECTED;
+                        state = State.DISCONNECTING;
                     }
                 });
                 state = State.CONNECTED;
@@ -110,20 +110,13 @@ public class MessageSender extends ETask implements Runnable {
             case FINISHED:
                 if (testPassed && receivedMessages == totalMessagesToSend) {
                     System.out.println("MessageSender test passed");
-                    state = State.DISCONNECTED;
+                    state = State.DISCONNECTING;
                 }
                 break;
 
-            case DISCONNECTED:
-                MessageQueueTest.logger.info("MessageSender is disconnected");
+            case DISCONNECTING:
 
-                // Disconnect the MessageQueue
-                this.post(new Event() {
-                    @Override
-                    public void react() {
-                        messageQueue.close();
-                    }
-                });
+                MessageQueueTest.logger.info("MessageSender is disconnected");
 
                 // remove the task from the running tasks list
                 this.post(new Event() {
@@ -132,6 +125,7 @@ public class MessageSender extends ETask implements Runnable {
                         ETask.runningTasks.remove(MessageSender.this);
                     }
                 });
+
                 MessageSender.this.post(new Event() {
                     @Override
                     public void react() {
@@ -139,6 +133,8 @@ public class MessageSender extends ETask implements Runnable {
                     }
                 });
                 this.kill();
+
+                state = State.DEAD;
                 break;
             default:
                 break;

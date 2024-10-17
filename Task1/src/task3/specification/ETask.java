@@ -1,6 +1,7 @@
 package task3.specification;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public abstract class ETask implements Runnable{
@@ -8,9 +9,10 @@ public abstract class ETask implements Runnable{
     private boolean iskilled = false;
 
     // Current running tasks
-    public static List<ETask> runningTasks = new ArrayList<ETask>();
+    public static final List<ETask> runningTasks = Collections.synchronizedList(new ArrayList<>());
 
     private EventPump pump;
+
 
     public ETask(EventPump pump){
         instance = this;
@@ -33,13 +35,9 @@ public abstract class ETask implements Runnable{
     public void kill(){
         this.setCurrentTask(null);
         this.iskilled = true;
-        pump.post(new Event() {
-            @Override
-            public void react() {
-                runningTasks.remove(ETask.this);
-            }
-        });
+        pump.post(new GeneralEvent(() -> runningTasks.remove(this)));
     }
+
     public boolean killed(){
         return this.iskilled;
     }

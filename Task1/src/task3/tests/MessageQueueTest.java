@@ -3,6 +3,7 @@ package task3.tests;
 import task3.implementation.*;
 import task3.specification.*;
 
+import java.util.ArrayList;
 import java.util.logging.Logger;
 
 public class MessageQueueTest {
@@ -40,25 +41,17 @@ public class MessageQueueTest {
 
         // Running the tasks
         while (!ETask.runningTasks.isEmpty()) {
-            int size = ETask.runningTasks.size();
-            for (int i = 0; i < size; i++) {
-                // Get the current task
-                ETask task;
-                try {
-                    task = ETask.runningTasks.get(i);
-                } catch (IndexOutOfBoundsException e) {
-                    // In case Task has been removed from the list (By EventPump)
-                    break;
-                }
-
-                // Run the task
-                if (task !=null && !task.killed()) {
-                    task.run();
+            synchronized (ETask.runningTasks) {
+                for (ETask task : new ArrayList<>(ETask.runningTasks)) {
+                    if (task != null && !task.killed()) {
+                        task.run();
+                    }
                 }
             }
         }
 
         eventPump.kill();
+
         System.out.println("MessageQueueTest completed successfully.");
     }
 }

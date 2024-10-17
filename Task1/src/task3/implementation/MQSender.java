@@ -12,6 +12,7 @@ public class MQSender implements Runnable {
     private Channel channel;
     private Queue<Message> messagesToSend;
     private MessageQueue parentMessageQueue;
+    private volatile boolean running = true;
 
     public MQSender(MessageQueue mq,Channel channel) {
         this.parentMessageQueue = mq;
@@ -28,12 +29,12 @@ public class MQSender implements Runnable {
 
     @Override
     public void run() {
-        while (true){
+        while (running){
             if (messagesToSend.isEmpty()) {
                 try {
                     Thread.sleep(1000); // TODO: Replace it by a Semaphore maybe ?
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    Thread.currentThread().interrupt();
                 }
             }
             else {
@@ -70,6 +71,10 @@ public class MQSender implements Runnable {
                 }
             }
         }
+    }
+
+    public void stop() {
+        running = false;
     }
 
     private byte[] intToByteArray(int length) {

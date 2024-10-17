@@ -10,11 +10,6 @@ public class TaskImpl extends Task {
         super(r);
     }
 
-    public TaskImpl(Runnable r, boolean isDeamon) {
-        this(r);
-        setDaemon(isDeamon);
-    }
-
     public TaskImpl(Broker b, Runnable r) {
         super(b, r);
     }

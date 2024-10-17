@@ -2,10 +2,6 @@ package task3.implementation;
 
 import task3.specification.*;
 
-import java.nio.ByteBuffer;
-import java.util.LinkedList;
-import java.util.Queue;
-
 public class MessageQueueImpl extends MessageQueue {
 
     private final Channel channel;
@@ -16,6 +12,10 @@ public class MessageQueueImpl extends MessageQueue {
     private final MQSender senderWorker;
     private final MQReceiver receiverWorker;
 
+    // Tasks of the workers
+    private final Task senderWorkerTask;
+    private final Task receiverWorkerTask;
+
 
     public MessageQueueImpl(Channel channel) {
         this.channel = channel;
@@ -24,8 +24,12 @@ public class MessageQueueImpl extends MessageQueue {
         this.receiverWorker = new MQReceiver(this, channel);
 
         // Start the sender and receiver threads
-        new TaskImpl(senderWorker).start();
-        new TaskImpl(receiverWorker).start();
+        senderWorkerTask = new TaskImpl(senderWorker);
+        receiverWorkerTask = new TaskImpl(receiverWorker);
+
+        // Start the sender and receiver threads
+        senderWorkerTask.start();
+        receiverWorkerTask.start();
     }
 
     @Override
@@ -49,6 +53,10 @@ public class MessageQueueImpl extends MessageQueue {
     @Override
     public void close() {
         isClosed = true;
+        this.senderWorker.stop();
+        this.receiverWorker.stop();
+        this.senderWorkerTask.interrupt();
+        this.receiverWorkerTask.interrupt();
         channel.disconnect();  // Disconnect the channel
     }
 

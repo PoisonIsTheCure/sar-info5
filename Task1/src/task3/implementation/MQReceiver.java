@@ -11,6 +11,7 @@ import java.util.Queue;
 public class MQReceiver implements Runnable{
     private Channel channel;
     private MessageQueue parentMessageQueue;
+    private volatile boolean running = true;
 
     public MQReceiver(MessageQueue mq, Channel channel) {
         this.parentMessageQueue = mq;
@@ -19,13 +20,18 @@ public class MQReceiver implements Runnable{
 
     @Override
     public void run() {
-        while (true) {
+        while (running) {
             byte[] lengthBuffer = new byte[4];
             int totalBytesRead = 0;
 
             // Read the message length (first 4 bytes)
             while (totalBytesRead < lengthBuffer.length) {
-                int bytesRead = channel.read(lengthBuffer, totalBytesRead, lengthBuffer.length - totalBytesRead);
+                int bytesRead = 0;
+                try {
+                    bytesRead = channel.read(lengthBuffer, totalBytesRead, lengthBuffer.length - totalBytesRead);
+                } catch (DisconnectedException e) {
+                    Thread.currentThread().interrupt();
+                }
                 if (bytesRead == -1) {
                     throw new DisconnectedException("Failed to read message length, channel disconnected.");
                 }
@@ -39,8 +45,15 @@ public class MQReceiver implements Runnable{
             byte[] messageBuffer = new byte[messageLength];
             totalBytesRead = 0;
             while (totalBytesRead < messageBuffer.length) {
-                int bytesRead = channel.read(messageBuffer, totalBytesRead, messageBuffer.length - totalBytesRead);
+                int bytesRead = 0;
+                try {
+                    bytesRead = channel.read(messageBuffer, totalBytesRead, messageBuffer.length - totalBytesRead);
+                } catch (DisconnectedException e) {
+                    Thread.currentThread().interrupt();
+                }
+
                 if (bytesRead == -1) {
+                    parentMessageQueue.getListener().closed();
                     throw new DisconnectedException("Failed to read message, channel disconnected.");
                 }
                 totalBytesRead += bytesRead;
@@ -49,6 +62,10 @@ public class MQReceiver implements Runnable{
             Message message = new Message(messageBuffer, 0, messageBuffer.length);
             parentMessageQueue.getListener().received(message.getMessage());
         }
+    }
+
+    public void stop() {
+        running = false;
     }
 
     private int byteArrayToInt(byte[] byteArray) {

@@ -14,7 +14,7 @@ public class MessageReceiver extends ETask implements Runnable{
     private final int totalMessagesToSend = MessageQueueTest.NUMBER_OF_MESSAGES;
 
     enum State {
-        INIT,WAITING_CONNECTION,SETTING_LISTENER,CONNECTED, FINISHED, DISCONNECTED
+        INIT,WAITING_CONNECTION,SETTING_LISTENER,CONNECTED, FINISHED, DISCONNECTING, DEAD
     }
 
     public MessageReceiver(QueueBroker queueBroker, EventPump pump) {
@@ -80,7 +80,7 @@ public class MessageReceiver extends ETask implements Runnable{
 
                     @Override
                     public void closed() {
-                        state = State.DISCONNECTED;
+                        state = State.DISCONNECTING;
                     }
 
                 });
@@ -91,27 +91,23 @@ public class MessageReceiver extends ETask implements Runnable{
             case FINISHED:
                 if (receivedMessages == totalMessagesToSend) {
                     System.out.println("MessageReceiver received and echoed all messages");
-                    state = State.DISCONNECTED;
+                    state = State.DISCONNECTING;
                 }
                 break;
-            case DISCONNECTED:
+            case DISCONNECTING:
+
                 MessageQueueTest.logger.info("MessageReceiver is disconnected");
                 queueBroker.unbind(getPort());
-                this.post(new Event() {
-                    @Override
-                    public void react() {
-                        ETask.runningTasks.remove(MessageReceiver.this);
-                    }
-                });
-                queueBroker.unbind(getPort());
-                MessageReceiver.this.post(new Event() {
-                    @Override
-                    public void react() {
-                        messageQueue.close();
-                    }
-                }
-                );
+
+                // Remove the task from runningTasks
+                this.post(new GeneralEvent(() -> ETask.runningTasks.remove(this)));
+
+                // Close the messageQueue
+                MessageReceiver.this.post(new GeneralEvent(() -> messageQueue.close()));
+
+                // Kill the task
                 this.kill();
+                state = State.DEAD;
                 break;
             default:
                 break;

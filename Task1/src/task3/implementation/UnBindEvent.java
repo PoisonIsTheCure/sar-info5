@@ -2,10 +2,14 @@ package task3.implementation;
 
 import task3.specification.Broker;
 import task3.specification.Event;
+import task3.specification.MessageQueue;
+import task3.specification.Task;
+import task3.tests.MessageQueueTest;
 
 public class UnBindEvent implements Event {
     private int port;
     private Broker broker;
+
     public UnBindEvent(Broker broker,int port) {
         this.broker = broker;
         this.port = port;
@@ -18,8 +22,8 @@ public class UnBindEvent implements Event {
         if (!BindEvent.acceptors.get(broker.getName()).containsKey(port)) {
             throw new RuntimeException("Port not bound");
         }
-        BindEvent.AcceptWaiter waiter = BindEvent.acceptors.get(broker.getName()).get(port);
-        waiter.stop();
+        Task waiter = BindEvent.acceptors.get(broker.getName()).get(port);
+        waiter.interrupt();
         BindEvent.acceptors.get(broker.getName()).remove(port);
     }
     public int getPort() {
