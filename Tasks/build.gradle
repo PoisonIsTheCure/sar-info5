@@ -1,0 +1,30 @@
+plugins {
+    id 'java'
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs 'src'
+        }
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.tinylog:tinylog-impl:2.7.0'
+    implementation 'org.tinylog:tinylog-api:2.7.0'
+}
+
+tasks.withType(JavaExec).configureEach {
+    systemProperty 'tinylog.configuration', "${projectDir}/tinylog.properties"
+}
+
+tasks.register('runEchoServer', JavaExec) {
+    mainClass = "task4.tests.MessageQueueTest"
+    classpath = sourceSets.main.runtimeClasspath
+}
+
