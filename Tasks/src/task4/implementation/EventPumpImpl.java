@@ -1,7 +1,9 @@
-package task3.implementation;
+package task4.implementation;
 
-import task3.specification.Event;
-import task3.specification.EventPump;
+import org.tinylog.Logger;
+import task4.events.GeneralEvent;
+import task4.specification.Event;
+import task4.specification.EventPump;
 
 import java.util.LinkedList;
 import java.util.Queue;
@@ -44,13 +46,13 @@ public class EventPumpImpl extends EventPump {
                 }
                 semaphore.acquire(); // wait for an event to be posted
                 Event event = eventsQueue.poll();
-                if (event instanceof task3.specification.GeneralEvent) {
-                    ((task3.specification.GeneralEvent) event).react();
-                    continue;
-                }
+
+                assert event != null;
+                Logger.info("EventPump: Event of type " + event.getClass().getSimpleName() + " received.");
+
                 event.react();
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                Logger.debug(e, "EventPump interrupted");
             }
         }
     }

@@ -1,8 +1,9 @@
-package task3.tests;
+package task4.tests;
 
-import task3.specification.*;
+import org.tinylog.Logger;
+import task4.specification.*;
 
-public class MessageSender extends ETask implements Runnable {
+public class MessageSender extends Task {
 
     private final QueueBroker queueBroker;
     private volatile MessageQueue messageQueue;
@@ -60,7 +61,7 @@ public class MessageSender extends ETask implements Runnable {
     private void sendMessage() {
         if (sentMessages == totalMessagesToSend) {
             state = State.FINISHED;
-            MessageQueueTest.logger.info("MessageSender finished sending messages");
+            Logger.info("MessageSender finished sending messages");
             return;
         }
         if (state == State.CONNECTED && messageQueue != null && sentMessages < totalMessagesToSend) {
@@ -100,7 +101,7 @@ public class MessageSender extends ETask implements Runnable {
                     }
                 });
                 state = State.CONNECTED;
-                MessageQueueTest.logger.info("MessageSender is connected and listening");
+                Logger.info("MessageSender is connected and listening");
                 break;
 
             case CONNECTED:
@@ -115,11 +116,11 @@ public class MessageSender extends ETask implements Runnable {
                 break;
 
             case DISCONNECTING:
-                MessageQueueTest.logger.info("MessageSender is disconnecting");
+                Logger.info("MessageSender is disconnecting");
                 state = State.DEAD;
                 break;
             case DEAD:
-                MessageQueueTest.logger.info("MessageSender is dead");
+                Logger.info("MessageSender is dead");
                 this.kill();
                 break;
             default:

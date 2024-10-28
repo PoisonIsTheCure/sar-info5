@@ -1,8 +1,6 @@
-package task3.implementation;
+package task4.events;
 
-import task3.specification.*;
-
-import java.io.IOException;
+import task4.specification.*;
 
 public class ConnectEvent implements Event {
 
@@ -20,17 +18,7 @@ public class ConnectEvent implements Event {
 
     @Override
     public void react() {
-        new TaskImpl(() -> {
-            try {
-                Channel channel = requestBroker.connect(name, port);
-                MessageQueue messageQueue = new MessageQueueImpl(channel);
-                listener.connected(messageQueue);
-            } catch (IOException e) {
-                listener.refused();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }).start();
+        // TODO: Implement this method
     }
 
     public String getName() {

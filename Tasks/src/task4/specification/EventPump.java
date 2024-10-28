@@ -1,4 +1,4 @@
-package task3.specification;
+package task4.specification;
 
 public abstract class EventPump extends Thread {
 

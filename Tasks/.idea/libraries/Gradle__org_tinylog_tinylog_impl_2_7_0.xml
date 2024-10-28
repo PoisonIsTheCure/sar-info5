@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="Gradle: org.tinylog:tinylog-impl:2.7.0" type="java-imported" external-system-id="GRADLE">
+    <properties groupId="org.tinylog" artifactId="tinylog-impl" version="2.7.0" />
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.tinylog/tinylog-impl/2.7.0/46a5d4d50d3302460a5143e51befdb7245ccba5d/tinylog-impl-2.7.0.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

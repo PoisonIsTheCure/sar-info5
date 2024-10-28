@@ -1,4 +1,4 @@
-package task3.specification;
+package task4.specification;
 
 public abstract class Channel {
     /**
@@ -26,9 +26,9 @@ public abstract class Channel {
      * @param bytes is the array of bytes
      * @param offset where to start sending
      * @param length length of data to send
-     * @return Number of bytes sent successfully, -1 if an error occurred
+     * @return boolean true if write can be done, false if refused
      */
-    public int write(byte[] bytes, int offset, int length){
+    public boolean write(byte[] bytes, int offset, int length){
         throw new IllegalStateException("Unimplemented Method");
     }
 
@@ -38,7 +38,7 @@ public abstract class Channel {
      * Note that if user requested to disconnect while reading/writing on
      * the channel, the channel will wait until the current job finish before disconnecting,
      * but if user check status it will appear as disconnected and no new jobs will be accepted
-     *  (read and write requests will return -1)
+     *  (read and write requests will throw an exception)
      */
     public void disconnect(){
         throw new IllegalStateException("Unimplemented Method");

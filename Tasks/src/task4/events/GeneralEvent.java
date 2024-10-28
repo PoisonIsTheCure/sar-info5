@@ -1,4 +1,6 @@
-package task3.specification;
+package task4.events;
+
+import task4.specification.Event;
 
 public class GeneralEvent implements Event {
 

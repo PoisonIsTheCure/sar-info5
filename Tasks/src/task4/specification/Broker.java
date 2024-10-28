@@ -1,4 +1,4 @@
-package task3.specification;
+package task4.specification;
 
 import java.io.IOException;
 
@@ -12,20 +12,21 @@ public abstract class Broker {
 
     /**
      * A function that accept incoming connections, given the port number
-     * It return the communication channel
+     *
+     * The AcceptListener is used to notify the caller when the connection is established
      *
      * @throws IOException if an I/O error occurs when creating the socket.
      *
      * @param port Number of connection port
      * @return specification.Channel
      */
-    public Channel accept(int port) throws IOException, InterruptedException {
+    public void bind(int port, QueueBroker.AcceptListener listener) throws IOException, InterruptedException {
         throw new IllegalStateException("Unimplemented Method");
     }
 
     /**
      * Sends a connection request to the given port associated with the given broker
-     * name
+     * The ConnectListener is used to notify the caller when the connection is established
      *
      * @throws IOException if an I/O error occurs when creating the socket.
      *
@@ -33,7 +34,7 @@ public abstract class Broker {
      * @param port connection port
      * @return The Communication Channel
      */
-    public Channel connect(String name, int port) throws IOException, InterruptedException {
+    public void connect(String name, int port, QueueBroker.ConnectListener listener) throws IOException, InterruptedException {
         throw new IllegalStateException("Unimplemented Method");
     }
 

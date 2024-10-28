@@ -1,4 +1,4 @@
-package task3.specification;
+package task4.specification;
 
 public interface Event {
 

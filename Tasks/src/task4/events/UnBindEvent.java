@@ -1,10 +1,7 @@
-package task3.implementation;
+package task4.events;
 
-import task3.specification.Broker;
-import task3.specification.Event;
-import task3.specification.MessageQueue;
-import task3.specification.Task;
-import task3.tests.MessageQueueTest;
+import task4.specification.Broker;
+import task4.specification.Event;
 
 public class UnBindEvent implements Event {
     private int port;
@@ -16,15 +13,7 @@ public class UnBindEvent implements Event {
     }
     @Override
     public void react() {
-        if (!BindEvent.acceptors.containsKey(broker.getName())) {
-            throw new RuntimeException("Broker not bound to any port");
-        }
-        if (!BindEvent.acceptors.get(broker.getName()).containsKey(port)) {
-            throw new RuntimeException("Port not bound");
-        }
-        Task waiter = BindEvent.acceptors.get(broker.getName()).get(port);
-        waiter.interrupt();
-        BindEvent.acceptors.get(broker.getName()).remove(port);
+        // TODO: Implement this method
     }
     public int getPort() {
         return port;

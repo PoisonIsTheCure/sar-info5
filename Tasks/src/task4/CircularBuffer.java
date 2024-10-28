@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package task3;
+package task4;
 
 /**
  * This circular buffer of bytes can be used to pass bytes between two threads:
@@ -24,6 +24,17 @@ package task3;
 public class CircularBuffer {
     volatile int m_tail, m_head;
     volatile byte m_bytes[];
+    private ReadListener listener;
+
+    public interface ReadListener {
+
+        /**
+         * This function should be called by the Channel that is writing
+         * In order to notify the Channel that is reading to indicate that there is
+         * data available that can be read
+         */
+        void readDataAvailable();
+    }
 
     public CircularBuffer(int capacity) {
         m_bytes = new byte[capacity];
