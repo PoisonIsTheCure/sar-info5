@@ -1,10 +1,10 @@
-package task4.implementation;
+package task4.specification;
 
 // Class to store the messages in the queue
 public class Message {
-    private byte[] message;
-    private int offset;
-    private int length;
+    public byte[] message;
+    public int offset;
+    public int length;
 
     public Message(byte[] message, int offset, int length) {
         this.message = message;

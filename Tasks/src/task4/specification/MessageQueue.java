@@ -11,6 +11,8 @@ public abstract class MessageQueue {
 
         void received(byte[] msg);
 
+        void sent(Message msg);
+
         void closed();
     }
 
@@ -28,22 +30,9 @@ public abstract class MessageQueue {
      * It will send the message as soon as possible, meaning that the message may not be sent immediately, if
      * other messages are being sent from the queue.
      *
-     * @param bytes The byte array containing the message to send.
+     * @param msg The message to send.
      */
-    public abstract void send(byte[] bytes) throws DisconnectedException;
-
-    /**
-     * Sends the requested message to the message queue.
-     *
-     * This method doesn't block the caller.
-     * It will send the message as soon as possible, meaning that the message may not be sent immediately, if
-     * other messages are being sent from the queue.
-     *
-     * @param bytes  The byte array containing the message to send.
-     * @param offset The start offset in the byte array from which to begin sending.
-     * @param length The number of bytes to send from the byte array.
-     */
-    public abstract void send(byte[] bytes, int offset, int length) throws DisconnectedException;
+    public abstract void send(Message msg) throws DisconnectedException;
 
     /**
      * Closes the message queue, releasing any resources associated with it.
