@@ -41,6 +41,10 @@ public class CircularBuffer {
         m_tail = m_head = 0;
     }
 
+    public void setReadListener(ReadListener listener) {
+        this.listener = listener;
+    }
+
     /**
      * @return true if this buffer is full, false otherwise
      */
