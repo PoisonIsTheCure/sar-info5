@@ -3,6 +3,8 @@ package task4.implementation;
 import task4.CircularBuffer;
 import task4.specification.Channel;
 import task4.specification.DisconnectedException;
+import task4.specification.Event;
+import task4.specification.Task;
 
 public class ChannelImpl extends Channel {
 
@@ -11,15 +13,26 @@ public class ChannelImpl extends Channel {
     private boolean disconnected = false;        // Indicates fully disconnected state
     private boolean halfDisconnected = false;    // Indicates that disconnection has been initiated but pending bytes are left
 
+    private boolean writePending = false;        // Indicates that a write operation is pending
+    private boolean readPending = false;         // Indicates that a read operation is pending
+
     public ChannelImpl(CircularBuffer receptionBuffer, CircularBuffer emissionBuffer) {
         this.receptionBuffer = receptionBuffer;
         this.emissionBuffer = emissionBuffer;
+
+        // Set the read listener for the reception buffer
+        receptionBuffer.setReadListener(new CircularBuffer.ReadListener() {
+            @Override
+            public void readDataAvailable() {
+                Task.task().post(new ReadEvent());
+            }
+        });
     }
 
     @Override
-    public boolean write(byte[] bytes, int offset, int length) throws DisconnectedException {
+    public int write(byte[] bytes, int offset, int length) throws DisconnectedException {
         // TODO: Implement this method
-        return false;
+        return 0;
     }
 
     @Override
@@ -41,4 +54,26 @@ public class ChannelImpl extends Channel {
     public boolean disconnected() {
         return this.disconnected;
     }
+
+
+    /**
+     * THE FOLLOWING CLASSES ARE EVENTS AND LISTENERS OWNED BY THE CHANNEL
+     */
+
+    private class ReadEvent implements Event {
+
+        @Override
+        public void react() {
+            // TODO: Implement this method
+        }
+    }
+
+    private class ChannelDisconnectEvent implements Event {
+
+        @Override
+        public void react() {
+            // TODO: Implement this method
+        }
+    }
+
 }

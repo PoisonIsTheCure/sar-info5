@@ -39,6 +39,15 @@ public abstract class Broker {
     }
 
     /**
+     * Unbinds a port from the broker.
+     *
+     * @param port The port to unbind the message queue from.
+     */
+    public void unbind(int port) {
+        throw new IllegalStateException("Unimplemented Method");
+    }
+
+    /**
      * Get the name of the broker
      *
      * @return The name of the broker
