@@ -16,6 +16,8 @@ public class ChannelImpl extends Channel {
     private boolean writePending = false;        // Indicates that a write operation is pending
     private boolean readPending = false;         // Indicates that a read operation is pending
 
+    private ChannelReadListener readListener;
+
     public ChannelImpl(CircularBuffer receptionBuffer, CircularBuffer emissionBuffer) {
         this.receptionBuffer = receptionBuffer;
         this.emissionBuffer = emissionBuffer;
@@ -24,7 +26,9 @@ public class ChannelImpl extends Channel {
         receptionBuffer.setReadListener(new CircularBuffer.ReadListener() {
             @Override
             public void readDataAvailable() {
-                Task.task().post(new ReadEvent());
+                if (readListener != null) {
+                    readListener.readDataAvailable();
+                }
             }
         });
     }
@@ -53,6 +57,11 @@ public class ChannelImpl extends Channel {
     @Override
     public boolean disconnected() {
         return this.disconnected;
+    }
+
+    @Override
+    public void setChannelReadListener(ChannelReadListener listener) {
+        this.readListener = listener;
     }
 
 
