@@ -35,8 +35,8 @@ public class BrokerImpl extends Broker {
      * The function establishes the connection between the two brokers, having the 2 listeners (Connect and Accept)
      *
      * The function is called in the EventPump thread (by AcceptEvent), so no concurrency issues
-     * @param connectListener
-     * @param acceptListener
+     * @param connectListener The listener of the source broker
+     * @param acceptListener The listener of the destination broker
      * @return
      */
     private boolean establishConnection(QueueBroker.ConnectListener connectListener, QueueBroker.AcceptListener acceptListener) {
