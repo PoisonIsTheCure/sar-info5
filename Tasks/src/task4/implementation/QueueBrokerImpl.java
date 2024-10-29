@@ -1,8 +1,6 @@
 package task4.implementation;
 
 import task4.events.BindEvent;
-import task4.events.ConnectEvent;
-import task4.events.UnBindEvent;
 import task4.specification.*;
 
 public class QueueBrokerImpl extends QueueBroker {
@@ -34,7 +32,7 @@ public class QueueBrokerImpl extends QueueBroker {
 
     @Override
     public void unbind(int port) {
-        UnBindEvent event = new UnBindEvent(this.broker,port);
+        BrokerImpl.UnBindEvent event = new BrokerImpl.UnBindEvent(this.broker,port);
         Task.task().post(event);
     }
 
