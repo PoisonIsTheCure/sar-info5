@@ -11,8 +11,6 @@ import java.util.List;
 
 public class BrokerImpl extends Broker {
 
-    private final static int BUFFER_SIZE = 10;
-
     private final BrokerManager manager;
 
     private final HashMap<Integer, QueueBroker.AcceptListener> acceptListeners = new HashMap<>();
@@ -28,36 +26,6 @@ public class BrokerImpl extends Broker {
         super(name);
         this.manager = BrokerManager.getInstance();
         this.manager.addBroker(this);
-    }
-
-    /**
-     * This function is called by the destination broker (who received the connection request)
-     * The function establishes the connection between the two brokers, having the 2 listeners (Connect and Accept)
-     *
-     * The function is called in the EventPump thread (by AcceptEvent), so no concurrency issues
-     * @param connectListener The listener of the source broker
-     * @param acceptListener The listener of the destination broker
-     * @return
-     */
-    private boolean establishConnection(QueueBroker.ConnectListener connectListener, QueueBroker.AcceptListener acceptListener) {
-
-        // Create buffers
-        CircularBuffer buffer1 = new CircularBuffer(BrokerImpl.BUFFER_SIZE);
-        CircularBuffer buffer2 = new CircularBuffer(BrokerImpl.BUFFER_SIZE);
-
-        // Create Channels
-        Channel channel1 = new ChannelImpl(buffer1, buffer2);
-        Channel channel2 = new ChannelImpl(buffer2, buffer1);
-
-        // Create MessageQueues
-        MessageQueue messageQueue1 = new MessageQueueImpl(channel1);
-        MessageQueue messageQueue2 = new MessageQueueImpl(channel2);
-
-        // Notify the listeners
-        connectListener.connected(messageQueue1);
-        acceptListener.accepted(messageQueue2);
-
-        return true;
     }
 
     @Override
@@ -147,8 +115,10 @@ public class BrokerImpl extends Broker {
 
         @Override
         public void react() {
+            // Create rdv
+            Rdv rdv = new Rdv();
             // Establish the connection
-            if (BrokerImpl.this.establishConnection(connectListener, acceptListener)) {
+            if (rdv.createRdv(connectListener, acceptListener)) {
                 // Remove the listener from the waitingConnections
                 Logger.info("Connection established on broker " + BrokerImpl.this.name + " and port " + port);
             }

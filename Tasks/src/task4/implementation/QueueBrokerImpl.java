@@ -1,10 +1,7 @@
 package task4.implementation;
 
 import org.tinylog.Logger;
-import task4.events.BindEvent;
 import task4.specification.*;
-
-import java.io.IOException;
 
 public class QueueBrokerImpl extends QueueBroker {
 

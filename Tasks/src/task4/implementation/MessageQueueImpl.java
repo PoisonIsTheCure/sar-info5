@@ -14,6 +14,8 @@ public class MessageQueueImpl extends MessageQueue {
     private SendState sendState = SendState.IDLE;
     private final InternalSendListener internalSendListener;
     private ReceiveState receiveState = ReceiveState.IDLE;
+    private int pendingReadNotification = 0;
+    private Rdv rdv;
 
 
     enum SendState {
@@ -31,8 +33,9 @@ public class MessageQueueImpl extends MessageQueue {
     }
 
 
-    public MessageQueueImpl(Channel channel) {
+    public MessageQueueImpl(Rdv rdv, Channel channel) {
         this.channel = channel;
+        this.rdv = rdv;
 
         // set the channel listener
         this.channel.setChannelReadListener(
@@ -41,13 +44,19 @@ public class MessageQueueImpl extends MessageQueue {
                     public void readDataAvailable() {
                         if (receiveState == ReceiveState.IDLE) {
                             receiveState = ReceiveState.RECEIVING_MESSAGE;
+                            pendingReadNotification--;
                             parentTask.post(new ReadEvent());
+                        } else {
+                            // Increment pending notifications if already receiving
+                            pendingReadNotification++;
                         }
                     }
                 }
         );
         this.isClosed = false;
         this.parentTask = Task.task();
+
+        // The following Listener aims to notify the MessageQueueImpl that the message has been sent
         this.internalSendListener = new InternalSendListener() {
             @Override
             public void sent(Message msg) {
@@ -199,4 +208,11 @@ public class MessageQueueImpl extends MessageQueue {
         }
     }
 
+    public static class MQCloseEvent implements Event {
+
+        @Override
+        public void react() {
+
+        }
+    }
 }

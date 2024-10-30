@@ -13,12 +13,15 @@ public class ChannelImpl extends Channel {
     private boolean disconnected = false;        // Indicates fully disconnected state
     private boolean halfDisconnected = false;    // Indicates that disconnection has been initiated but pending bytes are left
 
+    // Rdv
+    private Rdv rdv;
 
     private ChannelReadListener readListener;
 
-    public ChannelImpl(CircularBuffer receptionBuffer, CircularBuffer emissionBuffer) {
+    public ChannelImpl(Rdv rdv, CircularBuffer receptionBuffer, CircularBuffer emissionBuffer) {
         this.receptionBuffer = receptionBuffer;
         this.emissionBuffer = emissionBuffer;
+        this.rdv = rdv;
 
         // Set the read listener for the reception buffer
         receptionBuffer.setReadListener(new CircularBuffer.ReadListener() {
@@ -79,14 +82,6 @@ public class ChannelImpl extends Channel {
     /**
      * THE FOLLOWING CLASSES ARE EVENTS AND LISTENERS OWNED BY THE CHANNEL
      */
-
-    private class ReadEvent implements Event {
-
-        @Override
-        public void react() {
-            // TODO: Implement this method
-        }
-    }
 
     private class ChannelDisconnectEvent implements Event {
 
