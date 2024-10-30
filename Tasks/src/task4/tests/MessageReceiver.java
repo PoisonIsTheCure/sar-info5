@@ -3,11 +3,13 @@ package task4.tests;
 import org.tinylog.Logger;
 import task4.specification.*;
 
+import javax.swing.*;
+
 public class MessageReceiver extends Task {
 
     private final QueueBroker queueBroker;
-    private volatile MessageQueue messageQueue;
-    private volatile State state;
+    private MessageQueue messageQueue;
+    private State state;
 
 
     // Message Counters
@@ -53,7 +55,7 @@ public class MessageReceiver extends Task {
         }
         System.out.println("<-- MessageReceiver received message " + receivedMessages);
         receivedMessages++;
-        messageQueue.send(message); // Send back the same message
+        messageQueue.send(new Message(message, 0, message.length )); // Send back the same message
         if (receivedMessages == totalMessagesToSend) {
             this.state = State.FINISHED;
         }
@@ -77,6 +79,11 @@ public class MessageReceiver extends Task {
                     @Override
                     public void received(byte[] msg) {
                         echoMessage(msg);
+                    }
+
+                    @Override
+                    public void sent(Message msg) {
+                        Logger.info("MessageReceiver echoed message");
                     }
 
                     @Override

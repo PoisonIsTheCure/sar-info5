@@ -118,16 +118,18 @@ public class MessageQueueImpl extends MessageQueue {
             int written = 0;
             switch (msg.sendState){
                 case SENDING_LENGTH:
-                    written =  channel.write(msg.lengthBytes, msg.lengthOffset, 4);
+                    written =  channel.write(msg.lengthBytes, msg.lengthOffset, 4 - msg.lengthOffset);
                     msg.lengthOffset += written;
                     if (msg.lengthOffset < 4) {
                         parentTask.post(this);
+                        break;
                     } else {
                         msg.sendState = Message.MessageSendState.SENDING_MESSAGE;
                     }
-                    break;
+
+                    // fall through, break is not needed
                 case SENDING_MESSAGE:
-                    written = channel.write(msg.message, msg.offset, msg.length);
+                    written = channel.write(msg.message, msg.offset, msg.length - msg.offset);
                     msg.offset += written;
                     if (msg.offset < msg.length) {
                         parentTask.post(this);
@@ -135,6 +137,7 @@ public class MessageQueueImpl extends MessageQueue {
                     } else {
                         msg.sendState = Message.MessageSendState.FINISHED;
                     }
+                    
                     // fall through, break is not needed
                 case FINISHED:
                     internalSendListener.sent(msg);
@@ -156,7 +159,7 @@ public class MessageQueueImpl extends MessageQueue {
             switch (msg.receiveState) {
                 case RECEIVING_LENGTH:
                     // Read the message length (4 bytes)
-                    bytesRead = channel.read(msg.lengthBytes, msg.lengthOffset, 4);
+                    bytesRead = channel.read(msg.lengthBytes, msg.lengthOffset, 4 - msg.lengthOffset);
                     msg.lengthOffset += bytesRead;
 
                     if (msg.lengthOffset < 4) {

@@ -13,8 +13,6 @@ public class ChannelImpl extends Channel {
     private boolean disconnected = false;        // Indicates fully disconnected state
     private boolean halfDisconnected = false;    // Indicates that disconnection has been initiated but pending bytes are left
 
-    private boolean writePending = false;        // Indicates that a write operation is pending
-    private boolean readPending = false;         // Indicates that a read operation is pending
 
     private ChannelReadListener readListener;
 
@@ -35,14 +33,27 @@ public class ChannelImpl extends Channel {
 
     @Override
     public int write(byte[] bytes, int offset, int length) throws DisconnectedException {
-        // TODO: Implement this method
-        return 0;
+        int bytesWritten = 0;
+        while (!emissionBuffer.full() && length > 0) {
+            emissionBuffer.push(bytes[offset]);
+            offset++;
+            length--;
+            bytesWritten++;
+        }
+        emissionBuffer.listener.readDataAvailable();
+        return bytesWritten;
     }
 
     @Override
     public int read(byte[] bytes, int offset, int length) throws DisconnectedException {
-        // TODO: Implement this method
-        return 0;
+        int bytesRead = 0;
+        while (!receptionBuffer.empty() && length > 0) {
+            bytes[offset] = receptionBuffer.pull();
+            offset++;
+            length--;
+            bytesRead++;
+        }
+        return bytesRead;
     }
 
     public void halfDisconnect() {

@@ -65,9 +65,10 @@ public class MessageSender extends Task {
             return;
         }
         if (state == State.CONNECTED && messageQueue != null && sentMessages < totalMessagesToSend) {
-            System.out.println("--> Sending message "+ this.sentMessages +" : " + message);
+            // System.out.println("--> Sending message "+ this.sentMessages +" : " + message);
             this.sentMessages++;
-            messageQueue.send(message.getBytes());
+            byte[] msg = this.message.getBytes();
+            messageQueue.send(new Message(msg, 0, msg.length));
         }
     }
 
@@ -94,6 +95,13 @@ public class MessageSender extends Task {
                         System.out.println("--> Echo "+ receivedMessages +" received and matched");
                         receivedMessages++;
                     }
+
+                    @Override
+                    public void sent(Message msg) {
+                        Logger.info("MessageSender sent message");
+                        System.out.println("--> MessageSender sent message");
+                    }
+
 
                     @Override
                     public void closed() {

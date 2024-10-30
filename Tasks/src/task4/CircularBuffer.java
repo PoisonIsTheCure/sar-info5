@@ -24,7 +24,7 @@ package task4;
 public class CircularBuffer {
     volatile int m_tail, m_head;
     volatile byte m_bytes[];
-    private ReadListener listener;
+    public ReadListener listener;
 
     public interface ReadListener {
 
