@@ -23,6 +23,11 @@ tasks.withType(JavaExec).configureEach {
     systemProperty 'tinylog.configuration', "${projectDir}/tinylog.properties"
 }
 
+test {
+    useJUnitPlatform()
+}
+
+
 tasks.register('runEchoServer', JavaExec) {
     mainClass = "task4.tests.MessageQueueTest"
     classpath = sourceSets.main.runtimeClasspath

@@ -48,15 +48,17 @@ public class ChannelImpl extends Channel {
         if (disconnected) {
             throw new DisconnectedException("Channel is disconnected cannot read");
         }
-        if (halfDisconnected && receptionBuffer.empty()) {
-            this.disconnect();
-        }
         int bytesRead = 0;
         while (!receptionBuffer.empty() && length > 0) {
             bytes[offset] = receptionBuffer.pull();
             offset++;
             length--;
             bytesRead++;
+        }
+
+        // If the channel is half disconnected and the reception buffer is empty, then fully disconnect
+        if (halfDisconnected && receptionBuffer.empty()) {
+            this.disconnect();
         }
         return bytesRead;
     }
