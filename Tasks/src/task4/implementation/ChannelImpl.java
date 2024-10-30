@@ -3,6 +3,8 @@ package task4.implementation;
 import task4.CircularBuffer;
 import task4.specification.Channel;
 import task4.specification.DisconnectedException;
+import task4.specification.Event;
+import task4.specification.Task;
 
 public class ChannelImpl extends Channel {
 
@@ -11,34 +13,92 @@ public class ChannelImpl extends Channel {
     private boolean disconnected = false;        // Indicates fully disconnected state
     private boolean halfDisconnected = false;    // Indicates that disconnection has been initiated but pending bytes are left
 
-    public ChannelImpl(CircularBuffer receptionBuffer, CircularBuffer emissionBuffer) {
+    // Rdv
+    private Rdv rdv;
+
+
+    public ChannelImpl(Rdv rdv, CircularBuffer receptionBuffer, CircularBuffer emissionBuffer) {
         this.receptionBuffer = receptionBuffer;
         this.emissionBuffer = emissionBuffer;
+        this.rdv = rdv;
     }
 
     @Override
-    public boolean write(byte[] bytes, int offset, int length) throws DisconnectedException {
-        // TODO: Implement this method
-        return false;
+    public int write(byte[] bytes, int offset, int length) throws DisconnectedException {
+        if (disconnected || halfDisconnected) {
+            throw new DisconnectedException("Channel is disconnected cannot write");
+        }
+
+
+        int bytesWritten = 0;
+        while (!emissionBuffer.full() && length > 0) {
+            if (disconnected || halfDisconnected) {
+                throw new DisconnectedException("Channel Disconnected while writing");
+            }
+            emissionBuffer.push(bytes[offset]);
+            offset++;
+            length--;
+            bytesWritten++;
+        }
+        return bytesWritten;
     }
 
     @Override
     public int read(byte[] bytes, int offset, int length) throws DisconnectedException {
-        // TODO: Implement this method
-        return 0;
-    }
+        if (disconnected) {
+            throw new DisconnectedException("Channel is disconnected cannot read");
+        }
+        int bytesRead = 0;
+        while (!receptionBuffer.empty() && length > 0) {
+            bytes[offset] = receptionBuffer.pull();
+            offset++;
+            length--;
+            bytesRead++;
+        }
 
-    public void halfDisconnect() {
-        // TODO: Implement this method
+        // If the channel is half disconnected and the reception buffer is empty, then fully disconnect
+        if (halfDisconnected && receptionBuffer.empty()) {
+            this.disconnect();
+        }
+        return bytesRead;
     }
 
     @Override
     public void disconnect() {
-        // TODO: Implement this method
+        if (disconnected) {
+            return;
+        }
+        else if (halfDisconnected) {
+            disconnected = true;
+            return;
+        }else {
+            disconnected = true;
+            Task.task().post(new ChannelDisconnectEvent());
+        }
+    }
+
+    private void halfDisconnect() {
+        halfDisconnected = true;
     }
 
     @Override
     public boolean disconnected() {
         return this.disconnected;
     }
+
+    /**
+     * THE FOLLOWING CLASSES ARE EVENTS AND LISTENERS OWNED BY THE CHANNEL
+     */
+
+    private class ChannelDisconnectEvent implements Event {
+
+        @Override
+        public void react() {
+            ChannelImpl otherChannel = rdv.getOtherChannel(ChannelImpl.this);
+            if (otherChannel != null) {
+                otherChannel.halfDisconnect();
+            }
+        }
+    }
+
 }

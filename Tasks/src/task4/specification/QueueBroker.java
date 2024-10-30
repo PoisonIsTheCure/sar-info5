@@ -10,7 +10,6 @@ public abstract class QueueBroker {
     public interface AcceptListener {
 
         void accepted(MessageQueue queue);
-
     }
 
     public interface ConnectListener {

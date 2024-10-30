@@ -28,7 +28,7 @@ public abstract class Channel {
      * @param length length of data to send
      * @return boolean true if write can be done, false if refused
      */
-    public boolean write(byte[] bytes, int offset, int length){
+    public int write(byte[] bytes, int offset, int length){
         throw new IllegalStateException("Unimplemented Method");
     }
 
@@ -52,4 +52,5 @@ public abstract class Channel {
     public boolean disconnected(){
         throw new IllegalStateException("Unimplemented Method");
     }
+
 }
