@@ -1,5 +1,6 @@
-package task4.tests;
+package task4;
 
+import org.junit.jupiter.api.*;
 import org.tinylog.Logger;
 import task4.events.GeneralEvent;
 import task4.implementation.*;
@@ -12,18 +13,16 @@ public class MessageQueueTest {
     public static final int PORT = 6923;
     public static final int NUMBER_OF_MESSAGES = 10;
 
-    public static void main(String[] args) {
+    private EventPump eventPump;
 
-        // Logger check:
-        Logger.info("Loaded configuration from: {}", System.getProperty("tinylog.configuration"));
-
-        Logger.info("MessageQueueTest started.");
+    @BeforeEach
+    public void setUp() {
         // Initialize BrokerManager to handle both sender and receiver brokers
         BrokerManager.getInstance();
         Logger.info("BrokerManager initialized.");
 
         // Initialize the EventPump
-        EventPump eventPump = new EventPumpImpl();
+        eventPump = new EventPumpImpl();
         Logger.info("EventPump initialized.");
 
         // Create QueueBrokers for sender and receiver
@@ -37,7 +36,10 @@ public class MessageQueueTest {
                 "receiverBroker", eventPump, senderQueueBroker);
         Logger.info("MessageReceiver and MessageSender Event-based tasks created.");
 
+    }
 
+    @Test
+    public void testMessageQueue() {
         // Start the EventPump
         eventPump.start();
         Logger.info("EventPump started.");
@@ -61,4 +63,5 @@ public class MessageQueueTest {
 
         System.out.println("MessageQueueTest completed successfully.");
     }
+
 }

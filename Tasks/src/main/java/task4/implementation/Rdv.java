@@ -1,11 +1,7 @@
 package task4.implementation;
 
 import task4.CircularBuffer;
-import task4.specification.Channel;
-import task4.specification.MessageQueue;
 import task4.specification.QueueBroker;
-
-import java.nio.Buffer;
 
 public class Rdv {
     private final static int BUFFER_SIZE = 10;

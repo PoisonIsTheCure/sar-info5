@@ -1,7 +1,6 @@
 package task4.implementation;
 
 import org.tinylog.Logger;
-import task4.events.GeneralEvent;
 import task4.specification.Event;
 import task4.specification.EventPump;
 

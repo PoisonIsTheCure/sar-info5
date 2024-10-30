@@ -1,4 +1,4 @@
-package task4.tests;
+package task4;
 
 import org.tinylog.Logger;
 import task4.specification.*;

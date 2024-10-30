@@ -1,7 +1,6 @@
 package task4.implementation;
 
 import org.tinylog.Logger;
-import task4.CircularBuffer;
 import task4.specification.*;
 
 import java.io.IOException;
