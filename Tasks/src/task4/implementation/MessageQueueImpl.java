@@ -12,7 +12,6 @@ public class MessageQueueImpl extends MessageQueue {
     private final Task parentTask;
     private final Queue<Message> messages = new LinkedList<Message>();
     private SendState sendState = SendState.IDLE;
-    private final InternalSendListener internalSendListener;
     private ReceiveState receiveState = ReceiveState.IDLE;
     private int pendingReadNotification = 0;
     private Rdv rdv;
@@ -28,51 +27,12 @@ public class MessageQueueImpl extends MessageQueue {
         IDLE
     }
 
-    private interface InternalSendListener {
-        void sent(Message msg);
-    }
-
 
     public MessageQueueImpl(Rdv rdv, Channel channel) {
         this.channel = channel;
         this.rdv = rdv;
-
-        // set the channel listener
-        this.channel.setChannelReadListener(
-                new Channel.ChannelReadListener() {
-                    @Override
-                    public void readDataAvailable() {
-                        if (receiveState == ReceiveState.IDLE) {
-                            receiveState = ReceiveState.RECEIVING_MESSAGE;
-                            pendingReadNotification--;
-                            parentTask.post(new ReadEvent());
-                        } else {
-                            // Increment pending notifications if already receiving
-                            pendingReadNotification++;
-                        }
-                    }
-                }
-        );
         this.isClosed = false;
         this.parentTask = Task.task();
-
-        // The following Listener aims to notify the MessageQueueImpl that the message has been sent
-        this.internalSendListener = new InternalSendListener() {
-            @Override
-            public void sent(Message msg) {
-                // Notify the listener that the message has been sent
-                if (listener != null) {
-                    listener.sent(msg);
-                }
-
-                sendState = SendState.IDLE;
-                if (!messages.isEmpty()) {
-                    Message next = messages.poll();
-                    sendState = SendState.SENDING_MESSAGE;
-                    parentTask.post(new SendEvent(next, internalSendListener));
-                }
-            }
-        };
     }
 
     @Override
@@ -93,7 +53,7 @@ public class MessageQueueImpl extends MessageQueue {
         if (sendState == SendState.IDLE) {
             Message message = messages.poll();
             sendState = SendState.SENDING_MESSAGE;
-            parentTask.post(new SendEvent(message, internalSendListener));
+            parentTask.post(new SendEvent(message));
         }
     }
 
@@ -113,13 +73,24 @@ public class MessageQueueImpl extends MessageQueue {
         return listener;
     }
 
+    protected void notifyRead() {
+        if (this.receiveState == ReceiveState.IDLE) {
+            this.receiveState = ReceiveState.RECEIVING_MESSAGE;
+            this.parentTask.post(new ReadEvent());
+        } else {
+            this.pendingReadNotification++;
+        }
+    }
+
+    /**
+     * The classes are Event Handler classes that are used to handle the sending and receiving of messages
+     */
+
     private class SendEvent implements Event {
         private final Message msg;
-        private final InternalSendListener internalSendListener;
 
-        public SendEvent(Message msg, InternalSendListener listener) {
+        public SendEvent(Message msg) {
             this.msg = msg;
-            this.internalSendListener = listener;
         }
 
         @Override
@@ -127,6 +98,10 @@ public class MessageQueueImpl extends MessageQueue {
             int written = 0;
             switch (msg.sendState){
                 case SENDING_LENGTH:
+                    // Notify the receiver that data is available
+                    MessageQueueImpl.this.rdv.notifyMessageQueueRead(MessageQueueImpl.this);
+
+                    // Write the message length (4 bytes)
                     written =  channel.write(msg.lengthBytes, msg.lengthOffset, 4 - msg.lengthOffset);
                     msg.lengthOffset += written;
                     if (msg.lengthOffset < 4) {
@@ -149,7 +124,17 @@ public class MessageQueueImpl extends MessageQueue {
                     
                     // fall through, break is not needed
                 case FINISHED:
-                    internalSendListener.sent(msg);
+                    // Message fully sent, notify the listener
+                    MessageQueueImpl.this.listener.sent(msg);
+
+                    // Check if there are pending messages
+                    if (!messages.isEmpty()) {
+                        Message next = messages.poll();
+                        sendState = SendState.SENDING_MESSAGE;
+                        parentTask.post(new SendEvent(next));
+                    } else {
+                        sendState = SendState.IDLE;
+                    }
                     break;
             }
         }
@@ -182,7 +167,6 @@ public class MessageQueueImpl extends MessageQueue {
                         msg.receiveState = Message.MessageReceiveState.RECEIVING_MESSAGE;
                     }
                     // Fall-through to receive the message content
-
                 case RECEIVING_MESSAGE:
                     // Read the actual message content
                     bytesRead = channel.read(msg.message, msg.offset, msg.length - msg.offset);
@@ -201,8 +185,14 @@ public class MessageQueueImpl extends MessageQueue {
 
                     // Fall-through to finish the message
                 case FINISHED:
-                    // Message fully read and processed, set idle state
-                    receiveState = ReceiveState.IDLE;
+                    if (pendingReadNotification > 0) {
+                        // If there are pending read notifications, repost to handle them
+                        parentTask.post(new ReadEvent());
+                        pendingReadNotification--;
+                    } else {
+                        // Message fully read and processed, set idle state
+                        receiveState = ReceiveState.IDLE;
+                    }
                     break;
             }
         }

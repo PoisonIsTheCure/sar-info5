@@ -51,19 +51,27 @@ public class Rdv {
         return true;
     }
 
-    public ChannelImpl getChannel1() {
-        return channel1;
+    public ChannelImpl getOtherChannel(ChannelImpl channel) {
+        if (channel == channel1) {
+            return channel2;
+        } else {
+            return channel1;
+        }
     }
 
-    public ChannelImpl getChannel2() {
-        return channel2;
+    public MessageQueueImpl getOtherMessageQueue(MessageQueueImpl messageQueue) {
+        if (messageQueue == messageQueue1) {
+            return messageQueue2;
+        } else {
+            return messageQueue1;
+        }
     }
 
-    public MessageQueueImpl getMessageQueue1() {
-        return messageQueue1;
-    }
-
-    public MessageQueueImpl getMessageQueue2() {
-        return messageQueue2;
+    public void notifyMessageQueueRead(MessageQueueImpl messageQueue) {
+        if (messageQueue == messageQueue1) {
+            messageQueue2.notifyRead();
+        } else {
+            messageQueue1.notifyRead();
+        }
     }
 }

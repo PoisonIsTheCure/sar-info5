@@ -24,25 +24,10 @@ package task4;
 public class CircularBuffer {
     volatile int m_tail, m_head;
     volatile byte m_bytes[];
-    public ReadListener listener;
-
-    public interface ReadListener {
-
-        /**
-         * This function should be called by the Channel that is writing
-         * In order to notify the Channel that is reading to indicate that there is
-         * data available that can be read
-         */
-        void readDataAvailable();
-    }
 
     public CircularBuffer(int capacity) {
         m_bytes = new byte[capacity];
         m_tail = m_head = 0;
-    }
-
-    public void setReadListener(ReadListener listener) {
-        this.listener = listener;
     }
 
     /**

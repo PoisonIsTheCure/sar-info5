@@ -16,39 +16,41 @@ public class ChannelImpl extends Channel {
     // Rdv
     private Rdv rdv;
 
-    private ChannelReadListener readListener;
 
     public ChannelImpl(Rdv rdv, CircularBuffer receptionBuffer, CircularBuffer emissionBuffer) {
         this.receptionBuffer = receptionBuffer;
         this.emissionBuffer = emissionBuffer;
         this.rdv = rdv;
-
-        // Set the read listener for the reception buffer
-        receptionBuffer.setReadListener(new CircularBuffer.ReadListener() {
-            @Override
-            public void readDataAvailable() {
-                if (readListener != null) {
-                    readListener.readDataAvailable();
-                }
-            }
-        });
     }
 
     @Override
     public int write(byte[] bytes, int offset, int length) throws DisconnectedException {
+        if (disconnected || halfDisconnected) {
+            throw new DisconnectedException("Channel is disconnected cannot write");
+        }
+
+
         int bytesWritten = 0;
         while (!emissionBuffer.full() && length > 0) {
+            if (disconnected || halfDisconnected) {
+                throw new DisconnectedException("Channel Disconnected while writing");
+            }
             emissionBuffer.push(bytes[offset]);
             offset++;
             length--;
             bytesWritten++;
         }
-        emissionBuffer.listener.readDataAvailable();
         return bytesWritten;
     }
 
     @Override
     public int read(byte[] bytes, int offset, int length) throws DisconnectedException {
+        if (disconnected) {
+            throw new DisconnectedException("Channel is disconnected cannot read");
+        }
+        if (halfDisconnected && receptionBuffer.empty()) {
+            this.disconnect();
+        }
         int bytesRead = 0;
         while (!receptionBuffer.empty() && length > 0) {
             bytes[offset] = receptionBuffer.pull();
@@ -59,25 +61,28 @@ public class ChannelImpl extends Channel {
         return bytesRead;
     }
 
-    public void halfDisconnect() {
-        // TODO: Implement this method
-    }
-
     @Override
     public void disconnect() {
-        // TODO: Implement this method
+        if (disconnected) {
+            return;
+        }
+        else if (halfDisconnected) {
+            disconnected = true;
+            return;
+        }else {
+            disconnected = true;
+            Task.task().post(new ChannelDisconnectEvent());
+        }
+    }
+
+    private void halfDisconnect() {
+        halfDisconnected = true;
     }
 
     @Override
     public boolean disconnected() {
         return this.disconnected;
     }
-
-    @Override
-    public void setChannelReadListener(ChannelReadListener listener) {
-        this.readListener = listener;
-    }
-
 
     /**
      * THE FOLLOWING CLASSES ARE EVENTS AND LISTENERS OWNED BY THE CHANNEL
@@ -87,7 +92,10 @@ public class ChannelImpl extends Channel {
 
         @Override
         public void react() {
-            // TODO: Implement this method
+            ChannelImpl otherChannel = rdv.getOtherChannel(ChannelImpl.this);
+            if (otherChannel != null) {
+                otherChannel.halfDisconnect();
+            }
         }
     }
 

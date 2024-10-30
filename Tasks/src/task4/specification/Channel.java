@@ -53,16 +53,4 @@ public abstract class Channel {
         throw new IllegalStateException("Unimplemented Method");
     }
 
-
-    /**
-     * Set a listener to be notified when data is available to be read
-     * @param listener the listener to be notified
-     */
-    public void setChannelReadListener(ChannelReadListener listener){
-        throw new IllegalStateException("Unimplemented Method");
-    }
-
-    public interface ChannelReadListener {
-        void readDataAvailable();
-    }
 }
