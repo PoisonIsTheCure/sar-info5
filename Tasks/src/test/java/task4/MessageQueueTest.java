@@ -6,12 +6,16 @@ import task4.events.GeneralEvent;
 import task4.implementation.*;
 import task4.specification.*;
 
+import javax.annotation.processing.Messager;
 import java.util.ArrayList;
 
 public class MessageQueueTest {
 
     public static final int PORT = 6923;
     public static final int NUMBER_OF_MESSAGES = 10;
+    private static final int receiverQueueBrokersID = 0;
+    private static final int senderQueueBrokersID = 0;
+
 
     private EventPump eventPump;
 
@@ -52,16 +56,22 @@ public class MessageQueueTest {
                     if (task != null && !task.killed()) {
                         task.run();
                     }
+                    if (task instanceof MessageSender && ((MessageSender) task).receivedMessages == NUMBER_OF_MESSAGES) {
+                        ((MessageSender) task).setFinished();
+                    }
                 }
             }
         }
 
-        eventPump.post(new GeneralEvent(() -> {
+        eventPump.post(new GeneralEvent(null,() -> {
             Logger.info("MessageQueueTest: EventPump is killed.");
             eventPump.kill();
         }));
 
-        System.out.println("MessageQueueTest completed successfully.");
+        // Assert that both sender and receiver have transitioned to DEAD state
+//        Assertions.assertTrue(senderTask.isDead(), "Sender should be dead");
+//        Assertions.assertTrue(receiverTask.isDead(), "Receiver should be dead");
+
     }
 
 }

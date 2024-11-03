@@ -5,6 +5,7 @@ import task4.events.GeneralEvent;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 public abstract class Task implements Runnable {
     private static Task instance = null;
@@ -23,8 +24,8 @@ public abstract class Task implements Runnable {
     }
 
     public void post(Event r){
-        if (isKilled) {
-            throw new IllegalStateException("Task Has been killed!");
+        if (isKilled && r.getParentTask()!=this) {
+            throw new IllegalStateException("Task is killed");
         }
         pump.post(r);
     }
@@ -38,12 +39,14 @@ public abstract class Task implements Runnable {
     }
 
     public void kill(){
-        this.setCurrentTask(null);
-        this.isKilled = true;
-        pump.post(new GeneralEvent(() -> runningTasks.remove(this)));
+        isKilled = true;
+        pump.post(new GeneralEvent(this,() -> {
+//            runningTasks.remove(this);
+        }));
     }
 
     public boolean killed(){
         return this.isKilled;
     }
+
 }

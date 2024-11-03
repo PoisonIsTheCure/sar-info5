@@ -90,7 +90,11 @@ public class ChannelImpl extends Channel {
      * THE FOLLOWING CLASSES ARE EVENTS AND LISTENERS OWNED BY THE CHANNEL
      */
 
-    private class ChannelDisconnectEvent implements Event {
+    private class ChannelDisconnectEvent extends Event {
+
+        public ChannelDisconnectEvent() {
+            super(Task.task());
+        }
 
         @Override
         public void react() {

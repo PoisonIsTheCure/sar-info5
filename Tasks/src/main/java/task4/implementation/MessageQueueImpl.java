@@ -53,7 +53,7 @@ public class MessageQueueImpl extends MessageQueue {
         if (sendState == SendState.IDLE) {
             Message message = messages.poll();
             sendState = SendState.SENDING_MESSAGE;
-            parentTask.post(new SendEvent(message));
+            parentTask.post(new SendEvent(parentTask, message));
         }
     }
 
@@ -76,7 +76,7 @@ public class MessageQueueImpl extends MessageQueue {
     protected void notifyRead() {
         if (this.receiveState == ReceiveState.IDLE) {
             this.receiveState = ReceiveState.RECEIVING_MESSAGE;
-            this.parentTask.post(new ReadEvent());
+            this.parentTask.post(new ReadEvent(parentTask));
         } else {
             this.pendingReadNotification++;
         }
@@ -86,10 +86,11 @@ public class MessageQueueImpl extends MessageQueue {
      * The classes are Event Handler classes that are used to handle the sending and receiving of messages
      */
 
-    private class SendEvent implements Event {
+    private class SendEvent extends Event {
         private final Message msg;
 
-        public SendEvent(Message msg) {
+        public SendEvent(Task parentTask, Message msg) {
+            super(parentTask);
             this.msg = msg;
         }
 
@@ -131,7 +132,7 @@ public class MessageQueueImpl extends MessageQueue {
                     if (!messages.isEmpty()) {
                         Message next = messages.poll();
                         sendState = SendState.SENDING_MESSAGE;
-                        parentTask.post(new SendEvent(next));
+                        parentTask.post(new SendEvent(parentTask, next));
                     } else {
                         sendState = SendState.IDLE;
                     }
@@ -140,10 +141,11 @@ public class MessageQueueImpl extends MessageQueue {
         }
     }
 
-    private class ReadEvent implements Event {
+    private class ReadEvent extends Event {
         private final Message msg;
 
-        public ReadEvent() {
+        public ReadEvent(Task parentTask) {
+            super(parentTask);
             this.msg = new Message(new byte[4], 0, 4);
         }
 
@@ -187,7 +189,7 @@ public class MessageQueueImpl extends MessageQueue {
                 case FINISHED:
                     if (pendingReadNotification > 0) {
                         // If there are pending read notifications, repost to handle them
-                        parentTask.post(new ReadEvent());
+                        parentTask.post(new ReadEvent(parentTask));
                         pendingReadNotification--;
                     } else {
                         // Message fully read and processed, set idle state
@@ -198,7 +200,11 @@ public class MessageQueueImpl extends MessageQueue {
         }
     }
 
-    public static class MQCloseEvent implements Event {
+    public static class MQCloseEvent extends Event {
+
+        MQCloseEvent(Task parentTask) {
+            super(parentTask);
+        }
 
         @Override
         public void react() {

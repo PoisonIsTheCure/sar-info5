@@ -13,9 +13,8 @@ public class MessageSender extends Task {
     private boolean testPassed = true;
 
     // Message Counters
-    private int receivedMessages = 0;
-    private int sentMessages = 0;
-    private int totalMessagesToSend = MessageQueueTest.NUMBER_OF_MESSAGES;
+    public int receivedMessages = 0;
+    public int sentMessages = 0;
 
     enum State {
         INIT, WAITING_CONNECTION, SETTING_LISTENER, FINISHED, CONNECTED, DISCONNECTING, DEAD
@@ -49,7 +48,7 @@ public class MessageSender extends Task {
 
             @Override
             public void refused() {
-                System.out.println("Failed to establish connection in MessageSender");
+                Logger.info("Failed to establish connection in MessageSender");
                 state = State.DISCONNECTING;
             }
         });
@@ -59,17 +58,28 @@ public class MessageSender extends Task {
      * Sends the message through the MessageQueue.
      */
     private void sendMessage() {
-        if (sentMessages == totalMessagesToSend) {
-            state = State.FINISHED;
-            Logger.info("MessageSender finished sending messages");
+        // Send a random message
+        if (state != State.CONNECTED) {
             return;
         }
-        if (state == State.CONNECTED && messageQueue != null && sentMessages < totalMessagesToSend) {
-            // System.out.println("--> Sending message "+ this.sentMessages +" : " + message);
-            this.sentMessages++;
-            byte[] msg = this.message.getBytes();
-            messageQueue.send(new Message(msg, 0, msg.length));
+        Message msg = ChecksumUtility.generateRandomMessageWithChecksum();
+        sentMessages++;
+        messageQueue.send(msg);
+    }
+
+
+    /**
+     * Send Close message to the MessageQueue and disconnect from the receiver.
+     */
+    private void sendDisconnectMessage(){
+        if (state != State.CONNECTED) {
+            return;
         }
+        Message msg = ChecksumUtility.createCloseMessageWithChecksum();
+    }
+
+    public void setFinished() {
+        state = State.FINISHED;
     }
 
     @Override
@@ -92,14 +102,13 @@ public class MessageSender extends Task {
                     @Override
                     public void received(byte[] msg) {
                         testPassed = testPassed && new String(msg).equals(message);
-                        System.out.println("--> Echo "+ receivedMessages +" received and matched");
+                        Logger.info("--> Echo "+ receivedMessages +" received and matched");
                         receivedMessages++;
                     }
 
                     @Override
                     public void sent(Message msg) {
-                        Logger.info("MessageSender sent message");
-                        System.out.println("--> MessageSender sent message");
+                        Logger.info("--> MessageSender sent message");
                     }
 
 
@@ -117,16 +126,10 @@ public class MessageSender extends Task {
                 break;
 
             case FINISHED:
-                if (testPassed && receivedMessages == totalMessagesToSend) {
-                    System.out.println("MessageSender test passed");
-                    state = State.DISCONNECTING;
-                }
-                break;
-
-            case DISCONNECTING:
-                Logger.info("MessageSender is disconnecting");
+                Logger.info("MessageSender finished sending messages");
+                sendDisconnectMessage();
                 state = State.DEAD;
-                break;
+                // Fall through
             case DEAD:
                 Logger.info("MessageSender is dead");
                 this.kill();

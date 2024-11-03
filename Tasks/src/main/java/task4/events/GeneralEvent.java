@@ -1,12 +1,16 @@
 package task4.events;
 
 import task4.specification.Event;
+import task4.specification.Task;
 
-public class GeneralEvent implements Event {
+import java.util.UUID;
+
+public class GeneralEvent extends Event {
 
     private Runnable r;
 
-    public GeneralEvent(Runnable r){
+    public GeneralEvent(Task parentTask, Runnable r) {
+        super(parentTask);
         this.r = r;
     }
 
@@ -14,4 +18,5 @@ public class GeneralEvent implements Event {
     public void react() {
         r.run();
     }
+
 }
