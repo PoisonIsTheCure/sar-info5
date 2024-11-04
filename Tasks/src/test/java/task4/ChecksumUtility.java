@@ -113,4 +113,8 @@ public class ChecksumUtility {
             throw new RuntimeException("Hashing algorithm not found: " + algorithm, e);
         }
     }
+
+    public static String getMessageContent(Message message) {
+        return new String(message.message, StandardCharsets.UTF_8).split("\\" + CHECKSUM_DELIMITER, 2)[0];
+    }
 }

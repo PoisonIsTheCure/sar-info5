@@ -56,7 +56,7 @@ public class MessageQueueTest {
                     if (task != null && !task.killed()) {
                         task.run();
                     }
-                    if (task instanceof MessageSender && ((MessageSender) task).receivedMessages == NUMBER_OF_MESSAGES) {
+                    if (task instanceof MessageSender && ((MessageSender) task).sentMessages == NUMBER_OF_MESSAGES) {
                         ((MessageSender) task).setFinished();
                     }
                 }

@@ -1,5 +1,6 @@
 package task4.specification;
 
+import org.tinylog.Logger;
 import task4.events.GeneralEvent;
 
 import java.util.ArrayList;
@@ -41,7 +42,8 @@ public abstract class Task implements Runnable {
     public void kill(){
         isKilled = true;
         pump.post(new GeneralEvent(this,() -> {
-//            runningTasks.remove(this);
+            runningTasks.remove(this);
+            Logger.info("Task " + this + " killed");
         }));
     }
 

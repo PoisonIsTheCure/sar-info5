@@ -47,7 +47,7 @@ public class EventPumpImpl extends EventPump {
                 Event event = eventsQueue.poll();
 
                 assert event != null;
-                Logger.info("EventPump: Event of type " + event.getClass().getSimpleName() + " received.");
+//                Logger.info("EventPump: Event of type " + event.getClass().getSimpleName() + " received.");
 
                 event.react();
             } catch (InterruptedException e) {

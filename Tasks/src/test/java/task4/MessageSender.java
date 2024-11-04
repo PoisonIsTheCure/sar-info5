@@ -72,10 +72,8 @@ public class MessageSender extends Task {
      * Send Close message to the MessageQueue and disconnect from the receiver.
      */
     private void sendDisconnectMessage(){
-        if (state != State.CONNECTED) {
-            return;
-        }
         Message msg = ChecksumUtility.createCloseMessageWithChecksum();
+        messageQueue.send(msg);
     }
 
     public void setFinished() {

@@ -50,15 +50,19 @@ public class MessageReceiver extends Task {
         // Recreate the message
         Message msg = new Message(message, 0, message.length);
 
-        // Run the Checksum
-        if (!ChecksumUtility.verifyReceivedMessage(msg)){
-            Logger.info("Checksum failed for message: " + msg.message.toString());
-            return;
-        }
+        Logger.debug("MessageReceiver received message: " + ChecksumUtility.getMessageContent(msg));
 
         // Check if the message is the last one
         if (ChecksumUtility.isCloseMessage(msg)) {
+            // This Check Need to be done before the Checksum
+            // Because the default Checksum is not valid for the Close Message
             state = State.FINISHED;
+            return;
+        }
+
+        // Run the Checksum
+        if (!ChecksumUtility.verifyReceivedMessage(msg)){
+            Logger.info("Checksum failed for message: " + ChecksumUtility.getMessageContent(msg));
             return;
         }
 

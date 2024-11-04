@@ -208,7 +208,7 @@ public class MessageQueueImpl extends MessageQueue {
 
         @Override
         public void react() {
-
+            // Close the message queue
         }
     }
 }
