@@ -7,10 +7,8 @@ public class MessageSender extends Task {
 
     private final QueueBroker queueBroker;
     private volatile MessageQueue messageQueue;
-    private final String receiverBrokerName;
-    private final String message;
     private volatile State state;
-    private boolean testPassed = true;
+    private String toConnectWith = null;
 
     // Message Counters
     public int receivedMessages = 0;
@@ -20,11 +18,16 @@ public class MessageSender extends Task {
         INIT, WAITING_CONNECTION, SETTING_LISTENER, FINISHED, CONNECTED, DISCONNECTING, DEAD
     }
 
-    public MessageSender(String message, String receiverBrokerName, EventPump pump, QueueBroker queueBroker) {
+    public MessageSender(EventPump pump, QueueBroker queueBroker) {
         super(pump);
         this.queueBroker = queueBroker;
-        this.receiverBrokerName = receiverBrokerName;
-        this.message = message;
+        this.state = State.INIT;
+    }
+
+    public MessageSender(String toConnectWith,EventPump pump, QueueBroker queueBroker) {
+        super(pump);
+        this.toConnectWith = toConnectWith;
+        this.queueBroker = queueBroker;
         this.state = State.INIT;
     }
 
@@ -40,7 +43,14 @@ public class MessageSender extends Task {
      * Establish connection by creating a MessageQueue to communicate with the receiver.
      */
     public void establishConnection() {
-        getQueueBroker().connect(receiverBrokerName, getPort(), new QueueBroker.ConnectListener() {
+
+        // Create the receiver name based on sender Name (replacing send with receive in the QueueBroker Name)
+        String receiverName = this.queueBroker.name().replace("send","receive");
+        if (this.toConnectWith != null){
+            receiverName = this.toConnectWith;
+        }
+
+        getQueueBroker().connect(receiverName, getPort(), new QueueBroker.ConnectListener() {
             @Override
             public void connected(MessageQueue messageQueue) {
                 MessageSender.this.messageQueue = messageQueue;
@@ -99,8 +109,11 @@ public class MessageSender extends Task {
                 messageQueue.setListener(new MessageQueue.Listener() {
                     @Override
                     public void received(byte[] msg) {
-                        testPassed = testPassed && new String(msg).equals(message);
-                        Logger.info("--> Echo "+ receivedMessages +" received and matched");
+                        if (ChecksumUtility.verifyReceivedMessage(new Message(msg,0,msg.length))){
+                            Logger.info("--> Echo "+ receivedMessages +" received and matched");
+                        } else {
+                            Logger.info("--> Echo "+ receivedMessages +" didn't Match");
+                        }
                         receivedMessages++;
                     }
 

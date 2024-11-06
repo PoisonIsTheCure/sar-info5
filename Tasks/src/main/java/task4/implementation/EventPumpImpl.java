@@ -37,6 +37,11 @@ public class EventPumpImpl extends EventPump {
     }
 
     @Override
+    public boolean isKilled() {
+        return isKilled;
+    }
+
+    @Override
     public void run() {
         while (true) {
             try {

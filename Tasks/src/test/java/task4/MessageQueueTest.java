@@ -8,14 +8,14 @@ import task4.specification.*;
 
 import javax.annotation.processing.Messager;
 import java.util.ArrayList;
+import java.util.List;
 
 public class MessageQueueTest {
 
     public static final int PORT = 6923;
     public static final int NUMBER_OF_MESSAGES = 10;
-    private static final int receiverQueueBrokersID = 0;
-    private static final int senderQueueBrokersID = 0;
-
+    private static int receiverQueueBrokersID = 0;
+    private static int senderQueueBrokersID = 0;
 
     private EventPump eventPump;
 
@@ -28,18 +28,6 @@ public class MessageQueueTest {
         // Initialize the EventPump
         eventPump = new EventPumpImpl();
         Logger.info("EventPump initialized.");
-
-        // Create QueueBrokers for sender and receiver
-        QueueBroker senderQueueBroker = new QueueBrokerImpl("senderBroker");
-        QueueBroker receiverQueueBroker = new QueueBrokerImpl("receiverBroker");
-        Logger.info("QueueBrokers created.");
-
-        // Start the MessageReceiver and MessageSender threads
-        MessageReceiver receiverTester = new MessageReceiver(receiverQueueBroker, eventPump);
-        MessageSender senderTester = new MessageSender("Hello from MessageQueueTest!",
-                "receiverBroker", eventPump, senderQueueBroker);
-        Logger.info("MessageReceiver and MessageSender Event-based tasks created.");
-
     }
 
     @Test
@@ -48,30 +36,64 @@ public class MessageQueueTest {
         eventPump.start();
         Logger.info("EventPump started.");
 
+        // Create initial sender and receiver tasks
+        Task receiverTask = createNewReceiverTask();
+        Task senderTask = createNewSenderTask();
+        Logger.info("MessageReceiver and MessageSender Event-based tasks created.");
 
         // Running the tasks
         while (!Task.runningTasks.isEmpty()) {
-            synchronized (Task.runningTasks) {
-                for (Task task : new ArrayList<>(Task.runningTasks)) {
-                    if (task != null && !task.killed()) {
-                        task.run();
-                    }
-                    if (task instanceof MessageSender && ((MessageSender) task).sentMessages == NUMBER_OF_MESSAGES) {
-                        ((MessageSender) task).setFinished();
-                    }
+            for (Task task : new ArrayList<>(Task.runningTasks)) {
+                if (task != null && !task.killed()) {
+                    task.run();
+                }
+                if (task instanceof MessageSender && ((MessageSender) task).sentMessages == NUMBER_OF_MESSAGES) {
+                    ((MessageSender) task).setFinished();
                 }
             }
         }
 
-        eventPump.post(new GeneralEvent(null,() -> {
+        eventPump.post(new GeneralEvent(null, () -> {
             Logger.info("MessageQueueTest: EventPump is killed.");
             eventPump.kill();
         }));
 
         // Assert that both sender and receiver have transitioned to DEAD state
-//        Assertions.assertTrue(senderTask.isDead(), "Sender should be dead");
-//        Assertions.assertTrue(receiverTask.isDead(), "Receiver should be dead");
-
+        Assertions.assertTrue(senderTask.killed(), "Sender should be dead");
+        Assertions.assertTrue(receiverTask.killed(), "Receiver should be dead");
     }
 
+    /**
+     * Create the next sender Task (using the Id name)
+     * Each new sender will be made by a QueueBroker Named send-{nextID}
+     */
+    private Task createNewSenderTask() {
+        // Generate the next QueueBroker name using the next sender ID
+        String queueBrokerName = "send-" + senderQueueBrokersID++;
+
+        // Create a new QueueBroker with the generated name
+        QueueBroker senderQueueBroker = new QueueBrokerImpl(queueBrokerName);
+        Logger.info("Created QueueBroker: " + queueBrokerName);
+
+        // Create a new MessageSender task with appropriate parameters
+        MessageSender senderTask = new MessageSender(eventPump, senderQueueBroker);
+        Logger.info("MessageSender task created for QueueBroker: " + queueBrokerName);
+
+        return senderTask;
+    }
+
+    private Task createNewReceiverTask() {
+        // Generate the next QueueBroker name using the next receiver ID
+        String queueBrokerName = "receive-" + receiverQueueBrokersID++;
+
+        // Create a new QueueBroker with the generated name
+        QueueBroker receiverQueueBroker = new QueueBrokerImpl(queueBrokerName);
+        Logger.info("Created QueueBroker: " + queueBrokerName);
+
+        // Create a new MessageReceiver task with appropriate parameters
+        MessageReceiver receiverTask = new MessageReceiver(receiverQueueBroker, eventPump);
+        Logger.info("MessageReceiver task created for QueueBroker: " + queueBrokerName);
+
+        return receiverTask;
+    }
 }

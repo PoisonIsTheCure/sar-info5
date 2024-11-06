@@ -40,6 +40,9 @@ public abstract class Task implements Runnable {
     }
 
     public void kill(){
+        if (isKilled){
+            return; // already killed
+        }
         isKilled = true;
         pump.post(new GeneralEvent(this,() -> {
             runningTasks.remove(this);
