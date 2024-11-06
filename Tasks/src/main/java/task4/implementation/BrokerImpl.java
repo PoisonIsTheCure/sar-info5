@@ -1,7 +1,6 @@
 package task4.implementation;
 
 import org.tinylog.Logger;
-import task4.CircularBuffer;
 import task4.specification.*;
 
 import java.io.IOException;
@@ -30,12 +29,12 @@ public class BrokerImpl extends Broker {
 
     @Override
     public void bind(int port, QueueBroker.AcceptListener listener) throws IOException, InterruptedException {
-        Task.task().post(new BindEvent(port, listener));
+        Task.task().post(new BindEvent(Task.task() ,port, listener));
     }
 
     @Override
     public void unbind(int port) {
-        Task.task().post(new UnBindEvent(port));
+        Task.task().post(new UnBindEvent(Task.task(),port));
     }
 
     /**
@@ -63,7 +62,7 @@ public class BrokerImpl extends Broker {
             QueueBroker.AcceptListener acceptListener = this.acceptListeners.get(port);
 
             // Create an AcceptEvent
-            Task.task().post(new AcceptEvent(port, acceptListener, listener));
+            Task.task().post(new AcceptEvent(Task.task(), port, acceptListener, listener));
             return;
         }
 
@@ -98,16 +97,17 @@ public class BrokerImpl extends Broker {
         }
 
         // Deposit the connection request at the destination broker
-        Task.task().post(new ConnectEvent(destinationBroker, port, listener));
+        Task.task().post(new ConnectEvent(Task.task(),destinationBroker, port, listener));
     }
 
     // Inner class for AcceptEvent
-    private class AcceptEvent implements Event {
+    private class AcceptEvent extends Event {
         private final int port;
         private final QueueBroker.AcceptListener acceptListener;
         private final QueueBroker.ConnectListener connectListener;
 
-        public AcceptEvent(int port, QueueBroker.AcceptListener acceptListener, QueueBroker.ConnectListener connectListener) {
+        public AcceptEvent(Task parentTask, int port, QueueBroker.AcceptListener acceptListener, QueueBroker.ConnectListener connectListener) {
+            super(parentTask);
             this.port = port;
             this.acceptListener = acceptListener;
             this.connectListener = connectListener;
@@ -131,12 +131,13 @@ public class BrokerImpl extends Broker {
     }
 
     // Inner class for ConnectEvent
-    private class ConnectEvent implements Event {
+    private class ConnectEvent extends Event {
         private final BrokerImpl destinationBroker;
         private final int port;
         private final QueueBroker.ConnectListener listener;
 
-        public ConnectEvent(BrokerImpl destinationBroker, int port, QueueBroker.ConnectListener listener) {
+        public ConnectEvent(Task parentTask, BrokerImpl destinationBroker, int port, QueueBroker.ConnectListener listener) {
+            super(parentTask);
             this.destinationBroker = destinationBroker;
             this.port = port;
             this.listener = listener;
@@ -162,12 +163,13 @@ public class BrokerImpl extends Broker {
     BindEvent to access the fields of BrokerImpl
      */
 
-    private class BindEvent implements Event {
+    private class BindEvent extends Event {
 
         private final int port;
         private final QueueBroker.AcceptListener listener;
 
-        public BindEvent(int port, QueueBroker.AcceptListener listener) {
+        public BindEvent(Task parentTask, int port, QueueBroker.AcceptListener listener) {
+            super(parentTask);
             this.port = port;
             this.listener = listener;
         }
@@ -199,19 +201,21 @@ public class BrokerImpl extends Broker {
                     // Get the listener for the broker
                     QueueBroker.ConnectListener connectListener = listeners.get(name);
 
-                    currentTask.post(new AcceptEvent(port, listener, connectListener));
+                    currentTask.post(new AcceptEvent(Task.task(), port, listener, connectListener));
                     listeners.remove(connectBrokerName);
                 }
             }
         }
     }
 
-    private class UnBindEvent implements Event {
+    private class UnBindEvent extends Event {
         private final int port;
 
-        public UnBindEvent(int port) {
+        public UnBindEvent(Task parentTask,int port) {
+            super(parentTask);
             this.port = port;
         }
+
         @Override
         public void react() {
             if (BrokerImpl.this.acceptListeners.containsKey(port)) {

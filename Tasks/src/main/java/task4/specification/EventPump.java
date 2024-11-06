@@ -18,4 +18,6 @@ public abstract class EventPump extends Thread {
      *
      */
     public abstract void kill();
+
+    public abstract boolean isKilled();
 }

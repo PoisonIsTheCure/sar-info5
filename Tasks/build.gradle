@@ -1,11 +1,19 @@
 plugins {
     id 'java'
+    id 'eclipse' // optional (to generate Eclipse project files)
+    id 'idea' // optional (to generate IntelliJ IDEA project files)
 }
 
 sourceSets {
     main {
         java {
-            srcDirs 'src'
+            srcDirs 'src/main/java'
+        }
+    }
+
+    test {
+        java {
+            srcDirs 'src/test/java'
         }
     }
 }
@@ -17,14 +25,24 @@ repositories {
 dependencies {
     implementation 'org.tinylog:tinylog-impl:2.7.0'
     implementation 'org.tinylog:tinylog-api:2.7.0'
+    testImplementation(platform('org.junit:junit-bom:5.11.3'))
+    testImplementation('org.junit.jupiter:junit-jupiter')
+    testRuntimeOnly('org.junit.platform:junit-platform-launcher')
 }
 
 tasks.withType(JavaExec).configureEach {
     systemProperty 'tinylog.configuration', "${projectDir}/tinylog.properties"
 }
 
+
 test {
+    systemProperty 'tinylog.configuration', "${projectDir}/tinylog.properties"
     useJUnitPlatform()
+    testLogging {
+        events = ["PASSED", "FAILED", "SKIPPED"]
+        showStandardStreams = true
+        exceptionFormat = 'full'
+    }
 }
 
 

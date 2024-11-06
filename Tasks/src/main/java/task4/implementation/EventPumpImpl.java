@@ -1,7 +1,6 @@
 package task4.implementation;
 
 import org.tinylog.Logger;
-import task4.events.GeneralEvent;
 import task4.specification.Event;
 import task4.specification.EventPump;
 
@@ -38,6 +37,11 @@ public class EventPumpImpl extends EventPump {
     }
 
     @Override
+    public boolean isKilled() {
+        return isKilled;
+    }
+
+    @Override
     public void run() {
         while (true) {
             try {
@@ -48,7 +52,7 @@ public class EventPumpImpl extends EventPump {
                 Event event = eventsQueue.poll();
 
                 assert event != null;
-                Logger.info("EventPump: Event of type " + event.getClass().getSimpleName() + " received.");
+//                Logger.info("EventPump: Event of type " + event.getClass().getSimpleName() + " received.");
 
                 event.react();
             } catch (InterruptedException e) {

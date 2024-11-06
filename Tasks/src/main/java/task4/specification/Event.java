@@ -1,6 +1,11 @@
 package task4.specification;
 
-public interface Event {
+public abstract class Event {
+    private Task parentTask;
+
+    public Event(Task parentTask){
+        this.parentTask = parentTask;
+    }
 
     /**
      * This method is called when the event is triggered.
@@ -11,5 +16,9 @@ public interface Event {
      * If this method is blocking, it will block the EventPump and the other events will not be processed.
      * Any Threaded Mix should be handled by the Event itself.
      */
-    void react();
+    public abstract void react();
+
+    public Task getParentTask(){
+        return parentTask;
+    }
 }

@@ -1,9 +1,7 @@
-package task4.tests;
+package task4;
 
 import org.tinylog.Logger;
 import task4.specification.*;
-
-import javax.swing.*;
 
 public class MessageReceiver extends Task {
 
@@ -11,10 +9,6 @@ public class MessageReceiver extends Task {
     private MessageQueue messageQueue;
     private State state;
 
-
-    // Message Counters
-    private volatile int receivedMessages = 0;
-    private final int totalMessagesToSend = MessageQueueTest.NUMBER_OF_MESSAGES;
 
     enum State {
         INIT,WAITING_CONNECTION,SETTING_LISTENER,CONNECTED, FINISHED, DISCONNECTING, DEAD
@@ -53,12 +47,27 @@ public class MessageReceiver extends Task {
         if (state != State.CONNECTED) {
             return;
         }
-        System.out.println("<-- MessageReceiver received message " + receivedMessages);
-        receivedMessages++;
-        messageQueue.send(new Message(message, 0, message.length )); // Send back the same message
-        if (receivedMessages == totalMessagesToSend) {
-            this.state = State.FINISHED;
+        // Recreate the message
+        Message msg = new Message(message, 0, message.length);
+
+        Logger.debug("MessageReceiver received message: " + ChecksumUtility.getMessageContent(msg));
+
+        // Check if the message is the last one
+        if (ChecksumUtility.isCloseMessage(msg)) {
+            // This Check Need to be done before the Checksum
+            // Because the default Checksum is not valid for the Close Message
+            state = State.FINISHED;
+            return;
         }
+
+        // Run the Checksum
+        if (!ChecksumUtility.verifyReceivedMessage(msg)){
+            Logger.info("Checksum failed for message: " + ChecksumUtility.getMessageContent(msg));
+            return;
+        }
+
+        // Echo the message back
+        messageQueue.send(msg);
     }
 
     @Override
@@ -92,21 +101,19 @@ public class MessageReceiver extends Task {
                     }
 
                 });
+                // In the connected state, the receiver is listening for messages
                 state = State.CONNECTED;
                 Logger.info("MessageReceiver is connected and listening");
                 break;
-
             case FINISHED:
-                if (receivedMessages == totalMessagesToSend) {
-                    System.out.println("MessageReceiver received and echoed all messages");
-                    state = State.DISCONNECTING;
-                }
-                break;
+                Logger.info("MessageReceiver received and echoed all messages");
+                state = State.DISCONNECTING;
+                // Fall through
             case DISCONNECTING:
                 Logger.info("MessageReceiver is disconnecting");
                 queueBroker.unbind(getPort());
                 state = State.DEAD;
-                break;
+                // Fall through
             case DEAD:
                 Logger.info("MessageReceiver is dead");
                 this.kill();
