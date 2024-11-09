@@ -22,7 +22,7 @@ public class MessageReceiver extends Thread {
     }
 
     private int getPort() {
-        return TestRunner.RECEIVING_PORT;
+        return MessageQueueTest.RECEIVING_PORT;
     }
 
     /**
@@ -85,7 +85,7 @@ public class MessageReceiver extends Thread {
      * Simulates receiving multiple messages in a loop.
      */
     private void infiniteLoopReceiving() {
-        int numberOfMessages = TestRunner.NUMBER_OF_MESSAGES;
+        int numberOfMessages = MessageQueueTest.NUMBER_OF_MESSAGES;
         while (numberOfMessages > 0) {
             receiveMessage();
             try {

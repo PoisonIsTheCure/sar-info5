@@ -24,7 +24,7 @@ public class MessageSender extends Thread {
     }
 
     private int getPort() {
-        return TestRunner.SENDING_PORT;
+        return MessageQueueTest.SENDING_PORT;
     }
 
     /**
@@ -66,7 +66,7 @@ public class MessageSender extends Thread {
      * Simulates sending multiple messages in a loop.
      */
     private void infiniteLoopSending() {
-        int nbMessages = TestRunner.NUMBER_OF_MESSAGES;
+        int nbMessages = MessageQueueTest.NUMBER_OF_MESSAGES;
 
         while (nbMessages > 0) {
             sendMessage();

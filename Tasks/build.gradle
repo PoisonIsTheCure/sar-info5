@@ -62,7 +62,7 @@ test {
 }
 
 tasks.register('task1Run', JavaExec) {
-    mainClass = "task1.MessageQueueTest"
+    mainClass = "task1.TestRunner"
     classpath = sourceSets.test.runtimeClasspath
 }
 
