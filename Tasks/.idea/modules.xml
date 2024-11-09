@@ -4,6 +4,10 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/Tasks.iml" filepath="$PROJECT_DIR$/.idea/modules/Tasks.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/Tasks.main.iml" filepath="$PROJECT_DIR$/.idea/modules/Tasks.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/Tasks.task1.iml" filepath="$PROJECT_DIR$/.idea/modules/Tasks.task1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/Tasks.task2.iml" filepath="$PROJECT_DIR$/.idea/modules/Tasks.task2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/Tasks.task3.iml" filepath="$PROJECT_DIR$/.idea/modules/Tasks.task3.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/Tasks.task4.iml" filepath="$PROJECT_DIR$/.idea/modules/Tasks.task4.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/Tasks.test.iml" filepath="$PROJECT_DIR$/.idea/modules/Tasks.test.iml" />
     </modules>
   </component>

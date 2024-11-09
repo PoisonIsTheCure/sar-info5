@@ -4,6 +4,12 @@ plugins {
     id 'idea' // optional (to generate IntelliJ IDEA project files)
 }
 
+// Set the Java version
+//java {
+//    sourceCompatibility = JavaVersion.VERSION_11
+//    targetCompatibility = JavaVersion.VERSION_11
+//}
+
 sourceSets {
     main {
         java {
@@ -34,6 +40,16 @@ tasks.withType(JavaExec).configureEach {
     systemProperty 'tinylog.configuration', "${projectDir}/tinylog.properties"
 }
 
+tasks.withType(Test).configureEach {
+    systemProperty 'tinylog.configuration', "${projectDir}/tinylog.properties"
+    useJUnitPlatform()
+    testLogging {
+        events = ["PASSED", "FAILED", "SKIPPED"]
+        showStandardStreams = true
+        exceptionFormat = 'full'
+    }
+}
+
 
 test {
     systemProperty 'tinylog.configuration', "${projectDir}/tinylog.properties"
@@ -45,9 +61,23 @@ test {
     }
 }
 
-
-tasks.register('runEchoServer', JavaExec) {
-    mainClass = "task4.tests.MessageQueueTest"
-    classpath = sourceSets.main.runtimeClasspath
+tasks.register('task1Run', JavaExec) {
+    mainClass = "task1.MessageQueueTest"
+    classpath = sourceSets.test.runtimeClasspath
 }
+
+tasks.register('task2Run', JavaExec) {
+    mainClass = "task2.MessageQueueTest"
+    classpath = sourceSets.test.runtimeClasspath
+}
+
+tasks.register('task3Run', JavaExec) {
+    mainClass = "task3.MessageQueueTest"
+    classpath = sourceSets.test.runtimeClasspath
+}
+
+//tasks.register('task4Run', JavaExec) {
+//    mainClass = "task4.MessageQueueTest"
+//    classpath = sourceSets.test.runtimeClasspath
+//}
 

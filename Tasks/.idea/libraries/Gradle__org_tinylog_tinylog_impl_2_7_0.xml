@@ -5,6 +5,8 @@
       <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.tinylog/tinylog-impl/2.7.0/46a5d4d50d3302460a5143e51befdb7245ccba5d/tinylog-impl-2.7.0.jar!/" />
     </CLASSES>
     <JAVADOC />
-    <SOURCES />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.tinylog/tinylog-impl/2.7.0/e56e8182c56ce3cfc862241f8c85c4a7446a5419/tinylog-impl-2.7.0-sources.jar!/" />
+    </SOURCES>
   </library>
 </component>

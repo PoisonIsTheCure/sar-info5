@@ -6,9 +6,7 @@ import task4.events.GeneralEvent;
 import task4.implementation.*;
 import task4.specification.*;
 
-import javax.annotation.processing.Messager;
 import java.util.ArrayList;
-import java.util.List;
 
 public class MessageQueueTest {
 
