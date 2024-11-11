@@ -1,5 +1,7 @@
 package task1;
 
+import org.junit.jupiter.api.Assertions;
+import org.tinylog.Logger;
 import task1.specification.Broker;
 import task1.specification.Channel;
 import task1.specification.Task;
@@ -32,7 +34,7 @@ public class Receiver extends Thread {
         try {
             this.channel = getBroker().accept(this.getPort());
         } catch (IOException e) {
-            System.out.println("Failed to establish connection in Receiver");
+            Logger.error("Failed to establish connection in Receiver, error: " + e.getMessage());
             return false;
         }
         return true;
@@ -54,7 +56,7 @@ public class Receiver extends Thread {
             while (totalBytesRead < lengthBuffer.length) {
                 int bytesRead = channel.read(lengthBuffer, totalBytesRead, lengthBuffer.length - totalBytesRead);
                 if (bytesRead == -1) {
-                    System.out.println("Failed to read message length in Receiver");
+                    Logger.error("Failed to read message length in Receiver");
                     return;
                 }
                 totalBytesRead += bytesRead;
@@ -68,31 +70,52 @@ public class Receiver extends Thread {
             while (totalBytesRead < messageBuffer.length) {
                 int bytesRead = channel.read(messageBuffer, totalBytesRead, messageBuffer.length - totalBytesRead);
                 if (bytesRead == -1) {
-                    System.out.println("Failed to read message in Receiver");
+                    Logger.error("Failed to read message in Receiver");
                     return;
                 }
                 totalBytesRead += bytesRead;
             }
 
-            System.out.println("Received message (" + this.numberOfMessagesReceived + "): " + new String(messageBuffer));
+            System.out.println("<-- Received message in Receiver (" + this.numberOfMessagesReceived + "): " + new String(messageBuffer));
 
+            echoMessageBack(channel, messageBuffer);
         } catch (Exception e) {
-            System.out.println("Error receiving message in Receiver: " + e.getMessage());
+            Logger.error("Error receiving message in Receiver: " + e.getMessage());
+        }
+    }
+
+    private byte[] intToByteArray(int length) {
+        ByteBuffer buffer = ByteBuffer.allocate(4);
+        buffer.putInt(length);
+        return buffer.array();
+    }
+
+    private void echoMessageBack(Channel channel, byte[] messageBuffer) {
+        byte[] lengthBytes = intToByteArray(messageBuffer.length);
+        int totalSent = 0;
+
+        while (totalSent < lengthBytes.length) {
+            int sentData = channel.write(lengthBytes, totalSent, lengthBytes.length - totalSent);
+            totalSent += sentData;
+        }
+
+        totalSent = 0;
+        while (totalSent < messageBuffer.length) {
+            int sentData = channel.write(messageBuffer, totalSent, messageBuffer.length - totalSent);
+            totalSent += sentData;
         }
     }
 
     private void testDisconnectHandling() {
-        try {
+        Assertions.assertThrows(Exception.class, () -> {
             System.out.println("Testing disconnection...");
             this.channel.disconnect();
             byte[] testBuffer = new byte[10];
             this.channel.read(testBuffer, 0, testBuffer.length); // Should throw exception
-        } catch (Exception e) {
-            System.out.println("Disconnection test passed: " + e.getMessage());
-        }
+        });
     }
 
-    private void infiniteLoopReceiving() {
+    private void receiveMessages() {
         int numberOfMessages = TestRunner.NUMBER_OF_MESSAGES;
         while (numberOfMessages > 0) {
             receiveMessage();
@@ -113,12 +136,14 @@ public class Receiver extends Thread {
         }
     }
 
+
+
     @Override
     public void run() {
         boolean connected = establishConnection();
         if (!connected) {
-            return;
+            throw new IllegalStateException("Failed to establish connection in Receiver, check Duplicate Connection");
         }
-        infiniteLoopReceiving();
+        receiveMessages();
     }
 }

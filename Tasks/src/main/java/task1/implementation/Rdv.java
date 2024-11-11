@@ -12,19 +12,20 @@ public class Rdv {
     public static final int BUFFER_SIZE = 10;
 
     // Semaphores to control the connection
-    private Semaphore waitingControlSemaphore;
+    private final Semaphore waitingControlSemaphore;
 
     // Buffers
     private CircularBuffer receptionBuffer;
     private CircularBuffer emissionBuffer;
 
     private Broker connectBroker;
-    private Broker acceptBroker;
+    private final Broker acceptBroker;
 
     private ChannelImpl acceptChannel;
     private ChannelImpl connectChannel;
 
     private boolean channelsEstablished = false;
+    public boolean connectionAccepted = false;
 
     public Rdv(Broker acceptBroker) {
         this.acceptBroker = acceptBroker;
@@ -54,6 +55,8 @@ public class Rdv {
      */
     public Channel waitForConnect() throws IllegalStateException {
         // Called by the broker that accepted the connection
+
+        this.connectionAccepted = true;
 
         waitForOtherBroker();
 
