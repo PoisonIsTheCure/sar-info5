@@ -24,7 +24,6 @@ public class Rdv {
     private ChannelImpl acceptChannel;
     private ChannelImpl connectChannel;
 
-    private boolean channelsEstablished = false;
     public boolean connectionAccepted = false;
 
     public Rdv(Broker acceptBroker) {
@@ -34,7 +33,6 @@ public class Rdv {
 
     public synchronized void setConnectBroker(Broker connectBroker) {
         this.connectBroker = connectBroker;
-        this.channelsEstablished = true;
         establishChannels();
     }
 
@@ -75,8 +73,6 @@ public class Rdv {
     }
 
     public void disconnect() {
-        // reset the channels to delete the Rdv
-        this.channelsEstablished = false;
 
         // Notify the broker that the connection has been closed
         this.acceptChannel.halfDisconnect();
