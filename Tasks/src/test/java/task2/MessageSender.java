@@ -1,5 +1,7 @@
 package task2;
 
+import org.junit.jupiter.api.Assertions;
+import org.tinylog.Logger;
 import task2.specification.MessageQueue;
 import task2.specification.QueueBroker;
 import task2.specification.Task;
@@ -11,9 +13,17 @@ public class MessageSender extends Thread {
     private QueueBroker queueBroker;
     private MessageQueue messageQueue;
 
+    private int port = MessageQueueTest.SENDING_PORT;
+
     public MessageSender(String message, String receiverBrokerName) {
         this.message = message;
         this.receiverBrokerName = receiverBrokerName;
+    }
+
+    public MessageSender(String message, String receiverBrokerName, int port) {
+        this.message = message;
+        this.receiverBrokerName = receiverBrokerName;
+        this.port = port;
     }
 
     private QueueBroker getQueueBroker() {
@@ -24,7 +34,7 @@ public class MessageSender extends Thread {
     }
 
     private int getPort() {
-        return MessageQueueTest.SENDING_PORT;
+        return this.port;
     }
 
     /**
@@ -35,7 +45,7 @@ public class MessageSender extends Thread {
             // Use the broker to establish the message queue connection
             this.messageQueue = getQueueBroker().connect(receiverBrokerName, getPort());
             if (messageQueue == null) {
-                System.out.println("Failed to establish connection in MessageSender");
+                Logger.error("Failed to establish connection in MessageSender");
                 return false;
             }
         } catch (Exception e) {
@@ -49,7 +59,8 @@ public class MessageSender extends Thread {
      * Sends the message through the MessageQueue.
      */
     private void sendMessage() {
-        this.messageQueue.send(message.getBytes(), 0, message.length());
+        byte[] msg = this.message.getBytes();
+        this.messageQueue.send(msg, 0, msg.length);
     }
 
 
@@ -62,6 +73,17 @@ public class MessageSender extends Thread {
         }
     }
 
+    public boolean echoReceive() {
+        byte[] messageBuffer = messageQueue.receive();
+        if (messageBuffer == null) {
+            Logger.error("Failed to receive message in MessageSender");
+            return false;
+        }
+
+        System.out.println("<-- Received echo in Sender: " + new String(messageBuffer));
+        return true;
+    }
+
     /**
      * Simulates sending multiple messages in a loop.
      */
@@ -70,8 +92,11 @@ public class MessageSender extends Thread {
 
         while (nbMessages > 0) {
             sendMessage();
+
+            // Receive the echo message from the receiver
+            Assertions.assertTrue(echoReceive());
             try {
-                Thread.sleep(1000); // Simulate a delay between sending messages
+                Thread.sleep(100); // Simulate a delay between sending messages
             } catch (InterruptedException e) {
                 System.out.println("Failed to sleep in MessageSender");
             }

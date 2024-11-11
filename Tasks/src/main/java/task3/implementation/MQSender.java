@@ -32,7 +32,7 @@ public class MQSender implements Runnable {
         while (running){
             if (messagesToSend.isEmpty()) {
                 try {
-                    Thread.sleep(1000); // TODO: Replace it by a Semaphore maybe ?
+                    Thread.sleep(100); // TODO: Replace it by a Semaphore maybe ?
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
