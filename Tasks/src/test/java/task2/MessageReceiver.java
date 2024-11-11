@@ -106,7 +106,7 @@ public class MessageReceiver extends Thread {
         while (numberOfMessages > 0) {
             receiveMessage();
             try {
-                Thread.sleep(1000); // Simulate a delay between receiving messages
+                Thread.sleep(100); // Simulate a delay between receiving messages
             } catch (InterruptedException e) {
                 Logger.error("Failed to sleep in MessageReceiver");
             }

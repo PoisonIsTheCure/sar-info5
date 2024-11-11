@@ -1,5 +1,6 @@
 package task3;
 
+import org.tinylog.Logger;
 import task3.specification.*;
 
 public class MessageSender extends ETask implements Runnable {
@@ -10,6 +11,7 @@ public class MessageSender extends ETask implements Runnable {
     private final String message;
     private volatile State state;
     private boolean testPassed = true;
+    private int port = MessageQueueTest.PORT;
 
     // Message Counters
     private int receivedMessages = 0;
@@ -28,12 +30,21 @@ public class MessageSender extends ETask implements Runnable {
         this.state = State.INIT;
     }
 
+    public MessageSender(String message, String receiverBrokerName, EventPump pump, QueueBroker queueBroker, int port) {
+        super(pump);
+        this.queueBroker = queueBroker;
+        this.receiverBrokerName = receiverBrokerName;
+        this.message = message;
+        this.state = State.INIT;
+        this.port = port;
+    }
+
     private QueueBroker getQueueBroker() {
         return this.queueBroker;
     }
 
     private int getPort() {
-        return MessageQueueTest.PORT;
+        return this.port;
     }
 
     /**
@@ -60,7 +71,7 @@ public class MessageSender extends ETask implements Runnable {
     private void sendMessage() {
         if (sentMessages == totalMessagesToSend) {
             state = State.FINISHED;
-            MessageQueueTest.logger.info("MessageSender finished sending messages");
+            Logger.info("MessageSender finished sending messages");
             return;
         }
         if (state == State.CONNECTED && messageQueue != null && sentMessages < totalMessagesToSend) {
@@ -100,7 +111,7 @@ public class MessageSender extends ETask implements Runnable {
                     }
                 });
                 state = State.CONNECTED;
-                MessageQueueTest.logger.info("MessageSender is connected and listening");
+                Logger.info("MessageSender is connected and listening");
                 break;
 
             case CONNECTED:
@@ -115,11 +126,11 @@ public class MessageSender extends ETask implements Runnable {
                 break;
 
             case DISCONNECTING:
-                MessageQueueTest.logger.info("MessageSender is disconnecting");
+                Logger.info("MessageSender is disconnecting");
                 state = State.DEAD;
                 break;
             case DEAD:
-                MessageQueueTest.logger.info("MessageSender is dead");
+                Logger.info("MessageSender is dead");
                 this.kill();
                 break;
             default:

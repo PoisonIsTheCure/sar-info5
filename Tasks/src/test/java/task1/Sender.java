@@ -102,7 +102,7 @@ public class Sender extends Thread {
         while (nbMessages > 0) {
             sendMessage();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(100);
             } catch (InterruptedException e) {
                 Logger.error("Failed to sleep in Sender");
             }

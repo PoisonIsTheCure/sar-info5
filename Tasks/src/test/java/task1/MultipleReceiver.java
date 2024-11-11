@@ -133,7 +133,7 @@ public class MultipleReceiver extends Thread {
         while (numberOfMessages > 0) {
             receiveMessage();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(100);
             } catch (InterruptedException e) {
                 System.out.println("Failed to sleep in Receiver");
             }

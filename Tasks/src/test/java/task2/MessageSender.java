@@ -96,7 +96,7 @@ public class MessageSender extends Thread {
             // Receive the echo message from the receiver
             Assertions.assertTrue(echoReceive());
             try {
-                Thread.sleep(1000); // Simulate a delay between sending messages
+                Thread.sleep(100); // Simulate a delay between sending messages
             } catch (InterruptedException e) {
                 System.out.println("Failed to sleep in MessageSender");
             }

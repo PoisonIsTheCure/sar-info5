@@ -94,4 +94,12 @@ public class MessageQueueTest {
 
         return receiverTask;
     }
+
+    @AfterEach
+    public void tearDown() {
+        eventPump.kill();
+        Logger.info("EventPump killed.");
+
+        BrokerManager.getInstance().reset();
+    }
 }
