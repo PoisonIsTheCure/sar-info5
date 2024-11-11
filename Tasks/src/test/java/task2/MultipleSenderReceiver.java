@@ -6,14 +6,22 @@ import task2.specification.MessageQueue;
 import task2.specification.QueueBroker;
 import task2.specification.Task;
 
-public class MessageReceiver extends Thread {
+import java.util.ArrayList;
+import java.util.List;
+
+public class MultipleSenderReceiver extends Thread {
 
     private QueueBroker queueBroker;
-    private MessageQueue messageQueue;
+    private List<MessageQueue> messageQueues;
     private int numberOfMessagesReceived;
 
-    public MessageReceiver() {
+    // Port definition
+    public static final int PORT_1 = 5000;
+    public static final int PORT_2 = 5001;
+
+    public MultipleSenderReceiver() {
         this.numberOfMessagesReceived = 0;
+        this.messageQueues = new ArrayList<>();
     }
 
     private QueueBroker getQueueBroker() {
@@ -32,11 +40,16 @@ public class MessageReceiver extends Thread {
      */
     public boolean establishConnection() {
         try {
-            // Use the broker to accept the message queue connection
-            this.messageQueue = getQueueBroker().accept(getPort());
-            if (messageQueue == null) {
-                Logger.error("Failed to establish connection in MessageReceiver");
-                return false;
+            // Connect the 2 message queues
+            this.messageQueues.add(getQueueBroker().accept(PORT_1));
+            this.messageQueues.add(getQueueBroker().accept(PORT_2));
+
+            // Check if the message queues are connected
+            for (MessageQueue messageQueue : this.messageQueues) {
+                if (messageQueue == null) {
+                    Assertions.fail("Failed to establish connection in MessageReceiver");
+                    return false;
+                }
             }
         } catch (Exception e) {
             Logger.error("Failed to establish connection in MessageReceiver: " + e.getMessage());
@@ -49,27 +62,29 @@ public class MessageReceiver extends Thread {
      * Receives a message from the MessageQueue.
      */
     private void receiveMessage() {
-        try {
-            // Read the actual message
-            byte[] messageBuffer = messageQueue.receive();
-            if (messageBuffer == null) {
-                Logger.error("Failed to receive message in MessageReceiver");
-                return;
+        for (MessageQueue messageQueue : this.messageQueues) {
+            try {
+                // Read the actual message
+                byte[] messageBuffer = messageQueue.receive();
+                if (messageBuffer == null) {
+                    Logger.error("Failed to receive message in MessageReceiver");
+                    return;
+                }
+
+                System.out.println("<-- Received message (" + this.numberOfMessagesReceived + "): " + new String(messageBuffer));
+
+                // Echo the message back to the sender
+                echoMessageBack(messageBuffer, messageQueue);
+            } catch (Exception e) {
+                Assertions.fail("Failed to receive message in MessageReceiver: " + e.getMessage());
             }
-
-            System.out.println("<-- Received message (" + this.numberOfMessagesReceived + "): " + new String(messageBuffer));
-
-            // Echo the message back to the sender
-            echoMessageBack(messageBuffer);
-        } catch (Exception e) {
-            Logger.error("Error receiving message in MessageReceiver: " + e.getMessage());
         }
     }
 
-    public boolean echoMessageBack(byte[] message) {
+    public boolean echoMessageBack(byte[] message, MessageQueue messageQueue) {
         try {
             // Send the message back to the sender
-            this.messageQueue.send(message, 0, message.length);
+            messageQueue.send(message, 0, message.length);
 
             System.out.println("--> Echoed message back to sender: " + new String(message));
             return true;
@@ -93,8 +108,10 @@ public class MessageReceiver extends Thread {
      * Disconnects the MessageQueue after finishing receiving messages.
      */
     public void disconnect() {
-        if (messageQueue != null) {
-            messageQueue.close();
+        for (MessageQueue messageQueue : this.messageQueues) {
+            if (messageQueue != null) {
+                messageQueue.close();
+            }
         }
     }
 
