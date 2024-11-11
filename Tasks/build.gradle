@@ -1,14 +1,9 @@
 plugins {
+    id 'groovy'
     id 'java'
     id 'eclipse' // optional (to generate Eclipse project files)
     id 'idea' // optional (to generate IntelliJ IDEA project files)
 }
-
-// Set the Java version
-//java {
-//    sourceCompatibility = JavaVersion.VERSION_11
-//    targetCompatibility = JavaVersion.VERSION_11
-//}
 
 sourceSets {
     main {

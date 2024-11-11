@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.Queue;
 
 public class BrokerImpl extends Broker {
-    private BrokerManager manager;
+    private final BrokerManager manager;
 
     // Stores the Rdv objects per port
     private final Map<Integer, Rdv> rdvMap;
@@ -32,6 +32,10 @@ public class BrokerImpl extends Broker {
         Rdv acceptRdv;
         synchronized (this.rdvMap)  {
             acceptRdv = rdvMap.computeIfAbsent(port, k -> new Rdv(this));
+        }
+
+        if (acceptRdv.connectionAccepted){
+            throw new IOException("Connection already accepted");
         }
 
         // Notify the Rdv that the connection has been accepted
