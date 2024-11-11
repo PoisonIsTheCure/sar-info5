@@ -94,22 +94,16 @@ public class ChannelImpl extends Channel {
     }
 
     public void halfDisconnect() {
-        synchronized (this) {
-            if (!this.disconnected) {
-                // only half-disconnect if not fully disconnected
-                this.halfDisconnected = true;
-                notify(); // Notify any waiting threads
-            }
+        if (!this.disconnected) {
+            // only half-disconnect if not fully disconnected
+            this.halfDisconnected = true;
         }
     }
 
     @Override
     public void disconnect() {
-        synchronized (this) {
-            this.disconnected = true;
-            this.rdv.disconnect();
-            notify(); // Notify any waiting threads
-        }
+        this.disconnected = true;
+        this.rdv.disconnect();
     }
 
     @Override

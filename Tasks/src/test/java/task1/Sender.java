@@ -1,5 +1,7 @@
 package task1;
 
+import org.junit.jupiter.api.Assertions;
+import org.tinylog.Logger;
 import task1.specification.Broker;
 import task1.specification.Channel;
 import task1.specification.Task;
@@ -9,14 +11,22 @@ import java.nio.ByteBuffer;
 
 public class Sender extends Thread {
 
-    private String message;
-    private String receiverBrokerName;
+    private final String message;
+    private final String receiverBrokerName;
     private Broker broker;
     private Channel channel;
+    private int port = TestRunner.SENDING_PORT;
+    private int echoMessageReceived = 0;
 
     public Sender(String message, String receiverBrokerName) {
         this.message = message;
         this.receiverBrokerName = receiverBrokerName;
+    }
+
+    public Sender(String message, String receiverBrokerName, int port) {
+        this.message = message;
+        this.receiverBrokerName = receiverBrokerName;
+        this.port = port;
     }
 
     private Broker getBroker() {
@@ -27,18 +37,18 @@ public class Sender extends Thread {
     }
 
     private int getPort() {
-        return TestRunner.SENDING_PORT;
+        return this.port;
     }
 
     public boolean establishConnection() {
         try {
             this.channel = getBroker().connect(receiverBrokerName, getPort());
             if (channel == null) {
-                System.out.println("Failed to establish connection in Sender");
+                Logger.error("Failed to establish connection in Sender");
                 return false;
             }
         } catch (IOException e) {
-            System.out.println("Failed to establish connection in Sender");
+            Logger.error("Failed to establish connection in Sender");
             return false;
         }
         return true;
@@ -52,7 +62,7 @@ public class Sender extends Thread {
         while (totalSent < lengthBytes.length) {
             int sentData = channel.write(lengthBytes, totalSent, lengthBytes.length - totalSent);
             if (sentData == -1) {
-                System.out.println("Failed to send message length in Sender");
+                Logger.error("Failed to send message length in Sender");
                 return;
             }
             totalSent += sentData;
@@ -62,7 +72,7 @@ public class Sender extends Thread {
         while (totalSent < messageBytesArray.length) {
             int sentData = channel.write(messageBytesArray, totalSent, messageBytesArray.length - totalSent);
             if (sentData == -1) {
-                System.out.println("Failed to send message in Sender");
+                Logger.error("Failed to send message in Sender");
                 return;
             }
             totalSent += sentData;
@@ -94,14 +104,56 @@ public class Sender extends Thread {
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
-                System.out.println("Failed to sleep in Sender");
+                Logger.error("Failed to sleep in Sender");
             }
 
             nbMessages--;
+            Assertions.assertTrue(echoReception());
         }
 
         testDisconnectHandling();  // Run disconnection test after sending messages
         disconnect();
+    }
+
+    private int byteArrayToInt(byte[] byteArray) {
+        if (byteArray == null || byteArray.length != 4) {
+            throw new IllegalArgumentException("Invalid byte array size. Expected 4 bytes.");
+        }
+        ByteBuffer buffer = ByteBuffer.wrap(byteArray);
+        return buffer.getInt();
+    }
+
+    public boolean echoReception() {
+        byte[] lengthBuffer = new byte[4];
+        int totalBytesRead = 0;
+
+        while (totalBytesRead < lengthBuffer.length) {
+            int bytesRead = channel.read(lengthBuffer, totalBytesRead, lengthBuffer.length - totalBytesRead);
+            if (bytesRead == -1) {
+                Logger.error("Failed to read message length in Sender");
+                return false;
+            }
+            totalBytesRead += bytesRead;
+        }
+
+        int messageLength = byteArrayToInt(lengthBuffer);
+
+        byte[] messageBuffer = new byte[messageLength];
+        totalBytesRead = 0;
+
+        while (totalBytesRead < messageBuffer.length) {
+            int bytesRead = channel.read(messageBuffer, totalBytesRead, messageBuffer.length - totalBytesRead);
+            if (bytesRead == -1) {
+                Logger.error("Failed to read message in Sender");
+                return false;
+            }
+            totalBytesRead += bytesRead;
+        }
+
+        System.out.println("--> Received echo message ("+ echoMessageReceived +") in Sender '" + getBroker().getName()+ "' : " + new String(messageBuffer));
+
+        echoMessageReceived++;
+        return true;
     }
 
     public void disconnect() {

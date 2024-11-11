@@ -1,5 +1,7 @@
 package task2;
 
+import org.junit.jupiter.api.Assertions;
+import org.tinylog.Logger;
 import task2.specification.MessageQueue;
 import task2.specification.QueueBroker;
 import task2.specification.Task;
@@ -33,11 +35,11 @@ public class MessageReceiver extends Thread {
             // Use the broker to accept the message queue connection
             this.messageQueue = getQueueBroker().accept(getPort());
             if (messageQueue == null) {
-                System.out.println("Failed to establish connection in MessageReceiver");
+                Logger.error("Failed to establish connection in MessageReceiver");
                 return false;
             }
         } catch (Exception e) {
-            System.out.println("Failed to establish connection in MessageReceiver: " + e.getMessage());
+            Logger.error("Failed to establish connection in MessageReceiver: " + e.getMessage());
             return false;
         }
         return true;
@@ -51,14 +53,29 @@ public class MessageReceiver extends Thread {
             // Read the actual message
             byte[] messageBuffer = messageQueue.receive();
             if (messageBuffer == null) {
-                System.out.println("Failed to receive message in MessageReceiver");
+                Logger.error("Failed to receive message in MessageReceiver");
                 return;
             }
 
-            System.out.println("Received message (" + this.numberOfMessagesReceived + "): " + new String(messageBuffer));
+            System.out.println("<-- Received message (" + this.numberOfMessagesReceived + "): " + new String(messageBuffer));
 
+            // Echo the message back to the sender
+            echoMessageBack(messageBuffer);
         } catch (Exception e) {
-            System.out.println("Error receiving message in MessageReceiver: " + e.getMessage());
+            Logger.error("Error receiving message in MessageReceiver: " + e.getMessage());
+        }
+    }
+
+    public boolean echoMessageBack(byte[] message) {
+        try {
+            // Send the message back to the sender
+            this.messageQueue.send(message, 0, message.length);
+
+            System.out.println("--> Echoed message back to sender: " + new String(message));
+            return true;
+        } catch (Exception e) {
+            Assertions.fail("Failed to echo message back in MessageReceiver: " + e.getMessage());
+            return false;
         }
     }
 
@@ -91,7 +108,7 @@ public class MessageReceiver extends Thread {
             try {
                 Thread.sleep(1000); // Simulate a delay between receiving messages
             } catch (InterruptedException e) {
-                System.out.println("Failed to sleep in MessageReceiver");
+                Logger.error("Failed to sleep in MessageReceiver");
             }
             numberOfMessages--;
             this.numberOfMessagesReceived++;
