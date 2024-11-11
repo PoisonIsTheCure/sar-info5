@@ -19,6 +19,10 @@ public class BrokerManager {
         return instance;
     }
 
+    public void reset() {
+        instance = null;
+    }
+
     public synchronized void addBroker(BrokerImpl broker) {
         String name = broker.getName();
         Broker exists = brokers.get(name);

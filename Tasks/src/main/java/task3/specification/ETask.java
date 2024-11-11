@@ -35,7 +35,8 @@ public abstract class ETask implements Runnable{
     public void kill(){
         this.setCurrentTask(null);
         this.iskilled = true;
-        pump.post(new GeneralEvent(() -> runningTasks.remove(this)));
+        runningTasks.remove(this);
+//        pump.post(new GeneralEvent(() -> runningTasks.remove(this)));
     }
 
     public boolean killed(){

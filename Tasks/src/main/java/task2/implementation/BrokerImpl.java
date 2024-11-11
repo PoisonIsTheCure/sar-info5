@@ -32,6 +32,10 @@ public class BrokerImpl extends Broker {
             acceptRdv = rdvMap.computeIfAbsent(port, k -> new Rdv(this));
         }
 
+        if (acceptRdv.connectionAccepted){
+            throw new IOException("Connection already accepted");
+        }
+
         // Notify the Rdv that the connection has been accepted
         return acceptRdv.waitForConnect();
     }

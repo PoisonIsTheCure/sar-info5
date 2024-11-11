@@ -13,6 +13,8 @@ public abstract class Broker {
     /**
      * A function that accept incoming connections, given the port number
      * It return the communication channel
+     * <p>
+     * <i>Note: one connection per port is accepted, if a port is already in use, an <b>IOException</b> is thrown</i>
      *
      * @throws IOException if an I/O error occurs when creating the socket.
      *
@@ -26,6 +28,10 @@ public abstract class Broker {
     /**
      * Sends a connection request to the given port associated with the given broker
      * name
+     *
+     * The function blocks until the connection is accepted by the other broker
+     * <p>
+     * <i>Note: if the broker is not available, the function returns null</i>
      *
      * @throws IOException if an I/O error occurs when creating the socket.
      *

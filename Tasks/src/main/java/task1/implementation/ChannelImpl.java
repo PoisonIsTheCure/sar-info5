@@ -6,9 +6,9 @@ import task1.specification.DisconnectedException;
 
 public class ChannelImpl extends Channel {
 
-    private CircularBuffer receptionBuffer;
-    private CircularBuffer emissionBuffer;
-    private Rdv rdv;
+    private final CircularBuffer receptionBuffer;
+    private final CircularBuffer emissionBuffer;
+    private final Rdv rdv;
     private boolean disconnected = false;        // Indicates fully disconnected state
     private boolean halfDisconnected = false;    // Indicates that disconnection has been initiated but pending bytes are left
 

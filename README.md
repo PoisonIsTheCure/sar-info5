@@ -1,78 +1,42 @@
+# Project Overview
 
-You will specify, design, implement, and test a communication layer between “tasks”, 
-useful to establish communication channels, used to send and receive bytes. 
+This project is a collection of modular tasks that showcase various implementations related to message queues, broker management, and event handling systems. Each task builds upon a fundamental architecture to demonstrate different aspects of software design for handling messages and events, focusing on modularity and testing.
 
-Your specification will not assume if tasks run within the same process or the same machine.
+## Project Structure
 
-Your design, corresponding to your specification, will assume that tasks run within
-the same process. It will also assume the use of byte-oriented circular buffers
-to implement channels.
+The project contains the following tasks:
 
-You will create a local git repository in one of your directory,
-let's say "info5.sar":
+1. **Task 1**: A simple broker and channel implementation, allowing to exchange bytes of data.
+2. **Task 2**: Built on previous layer, this task introduce the MessageQueue and QueueBroker concept, that allows to send Messages in a Queue, that allow different tasks to communicate with each others, all this in a threaded envirenment.
+3. **Task 3**: An event handling system, introducing event to handle some layers of the previous task in an event-driven approach, so in this task, we are implementing a mixt version somewhere between events world and threads world, keeping Channels and Broker threaded, and implementing MessageQueue and QueueBroker with events.
+4. **Task 4**: This task re-implement the previous one in a fullu eventful way.
 
-    $ mkdir ~/info5.sar
-    $ cd ~/info5.sar
-    $ git init
+Each task is contained within its own package.
 
-You will surrender this git at the end of today's classwork.
+## Running the Project in Eclipse
 
-That git repository must be an Eclipse workspace, with projects.
+To work with this project in Eclipse, follow these steps:
 
-    $ eclipse -data ~/info5.sar
-    
-You may use other IDEs, to do your work, but the Eclipse workspace
-must be functional and the projects must compile and run.
+### Step 1: Import the Project into Eclipse
+1. Open Eclipse.
+2. Go to `File` > `Import...`.
+3. Select `Existing Gradle Project` and click `Next`.
+4. Choose the root directory of this project and click `Finish`.
+5. Eclipse will automatically detect the `build.gradle` file and set up the project for you.
 
-The first project will be called "task1". Make sure to have
-the proper .gitignore to avoid adding class files to the repository.
+### Step 2: Run Specific Tasks
 
-You will create a first branch called "task1" to work on your
-project "task1". 
+*TODO ...*
 
-From this branch, you will create four other branches:
-     - task1.specification
-     - task1.design
-     - task1.implementation
-     - task1.tests
+> **Note**: To view the logs and any runtime configurations, check the `app.log` file in the `logs` directory.
 
-And you will use these different branches to track the evolution
-of the specification, the design, the code, and tests as if they
-were done by four different developers.
+### Step 3: Running Tests
 
-  - Updates to the specification must be done in "task1.specification"
-    then merg it back to "task1". 
-  - Updates to the design must be done in "task1.design"
-    then merge  it back to "task1". 
-  - Updates to the implementation must be done in "task1.implementation"
-    then merge it back to "task1". 
-  - Updates to the tests must be done in "task1.tests"
-    then merge it back to "task1". 
+To run tests for each task:
+1. In the Gradle Tasks view, expand `verification`.
+2. Double-click on `test` to execute all tests in the project.
+3. Test results can be found in the `build/reports/tests/test/index.html` file after execution.
 
-The following organization of your work is **mandatory**
-and should be visible in your git log as different commits
-on the relevant branches.
+### Logging Configuration
 
-  - You will write the specification first.
-  - Then, you will write the tests.
-  - Then the design
-  - Then the implementation, as concrete classes
-    extending the given abstract classes.
-  - And finally the testing.
-
-For the test, you will implement a simple echo server. An echo server
-accepts the connect of any number of clients and echoes back anything
-a client sends.
-
-A test client will loop over and over the following steps:
-  - connect to the server
-  - send a sequence of bytes, representing the number from 1 to 255
-  - test that these bytes are echoed properly by the server
-  - disconnect.
-
-You will test with one server and several clients.
-
-At the end of the classwork, you will make sure to git-add and git-commit
-and you will surrender your git repository as an archive (zip or tar).
-Then, as homework, you will finish the given task. You will surrender
-your git before the next classroom lecture, as an archive (zip or tar).
+Logging is handled by Tinylog, configured in the `tinylog.properties` file located in the root directory. You can adjust the logging level and other configurations here.
