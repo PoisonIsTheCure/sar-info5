@@ -38,6 +38,31 @@ To run tests for each task:
 Logging is handled by Tinylog, configured in the `tinylog.properties` file located in the root directory. You can adjust the logging level and other configurations here.
 
 
+## Running the Project in Command Line
+
+To run the project from the command line, follow these steps:
+
+1. **Navigate to the Project Root**: Open a terminal and navigate to the root directory of the project.
+   ```bash
+   cd /path/to/project
+   ```
+
+2. **Build the Project**: Ensure that Gradle is installed. Run the following command to build the project and compile the code:
+   ```bash
+   ./gradlew build
+   ```
+
+3. **Run Tests from the Command Line**: To execute all tests across tasks, run:
+   ```bash
+   ./gradlew test
+   ```
+
+4. **View Test Reports**: After running tests, view the results by opening the HTML report:
+   ```bash
+   open build/reports/tests/test/index.html
+   ```
+
+
 # Deep Look
 
 This project consists of four progressive tasks, each building on the previous one to develop a broker-based communication system in Java. The tasks focus on asynchronous message exchanges, inter-thread communication, and event-driven programming using brokers, channels, message queues, and an event pump.
@@ -111,6 +136,8 @@ the run function when called will process the events in the queue, thus jobs don
 ### Overview
 
 Task 4 if the final task, it is a full eventful task, where all the communication is done through events,
+
+> **Note**: In this task, there is no `Etask` as all task are eventful, only `Task` (Eventful) is used.
 
 A design pdf (Mindmap) is provided in the root directory of the project, it shows the full architecture of this task.
 
