@@ -1,6 +1,12 @@
 # Project Overview
 
-This project is a collection of modular tasks that showcase various implementations related to message queues, broker management, and event handling systems. Each task builds upon a fundamental architecture to demonstrate different aspects of software design for handling messages and events, focusing on modularity and testing.
+Projet Systèmes et Applications Répartis - INFO5 fait par:
+
+- **FAWAZ Ali**
+- **VITTET Brice**
+- **MESBAH Abderrahmane**
+- **BENHAMED Abdelhakim**
+- **KHRIBECH Achraf**
 
 ## Project Structure
 
@@ -12,6 +18,12 @@ The project contains the following tasks:
 4. **Task 4**: This task re-implement the previous one in a fullu eventful way.
 
 Each task is contained within its own package.
+
+## Docs
+
+Note that you can find the java docs in the `specification-javadoc` directory, 
+you can open the `index.html` file in your browser to see the documentation.
+
 
 ## Running the Project in Eclipse
 
@@ -139,5 +151,4 @@ Task 4 if the final task, it is a full eventful task, where all the communicatio
 
 > **Note**: In this task, there is no `Etask` as all task are eventful, only `Task` (Eventful) is used.
 
-A design pdf (Mindmap) is provided in the root directory of the project, it shows the full architecture of this task.
-
+A design pdf (Mindmap) `Task4_Design.pdf` is provided in the root directory of the project, it shows the full architecture of this task.
