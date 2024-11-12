@@ -29,7 +29,7 @@ public class MessageQueueTest {
     }
 
     @Test
-    public void testMessageQueue() {
+    public void task4GeneralTest() {
         // Start the EventPump
         eventPump.start();
         Logger.info("EventPump started.");
@@ -45,9 +45,9 @@ public class MessageQueueTest {
                 if (task != null && !task.killed()) {
                     task.run();
                 }
-                if (task instanceof MessageSender && ((MessageSender) task).sentMessages == NUMBER_OF_MESSAGES) {
-                    ((MessageSender) task).setFinished();
-                }
+//                if (task instanceof MessageSender && ((MessageSender) task).sentMessages == NUMBER_OF_MESSAGES) {
+//                    ((MessageSender) task).setFinished();
+//                }
             }
         }
 
@@ -59,6 +59,54 @@ public class MessageQueueTest {
         // Assert that both sender and receiver have transitioned to DEAD state
         Assertions.assertTrue(senderTask.killed(), "Sender should be dead");
         Assertions.assertTrue(receiverTask.killed(), "Receiver should be dead");
+    }
+
+    @Test
+    public void task4MultipleSendersTest() {
+        // Start the EventPump
+        eventPump.start();
+        Logger.info("EventPump started.");
+
+        // Create QueueBrokers for sender and receiver
+        QueueBroker senderQueueBroker1 = new QueueBrokerImpl("sender1");
+        QueueBroker senderQueueBroker2 = new QueueBrokerImpl("sender2");
+        QueueBroker receiverQueueBroker = new QueueBrokerImpl("receiver");
+
+        // Create the sender and receiver tasks
+        Task senderTask1 = new MessageSender("receiver",eventPump, senderQueueBroker1, MultipleSendersReceiver.PORT_1);
+        Task senderTask2 = new MessageSender("receiver",eventPump, senderQueueBroker2, MultipleSendersReceiver.PORT_2);
+        Task receiverTask = new MultipleSendersReceiver(receiverQueueBroker, eventPump);
+        Logger.info("2 Sender and 1 Receiver --> Event-based tasks created.");
+
+        // Running the tasks
+        while (!Task.runningTasks.isEmpty()) {
+            for (Task task : new ArrayList<>(Task.runningTasks)) {
+                if (task != null && !task.killed()) {
+                    task.run();
+                }
+//                if (task instanceof MessageSender && ((MessageSender) task).sentMessages == NUMBER_OF_MESSAGES) {
+//                    ((MessageSender) task).setFinished();
+//                }
+            }
+        }
+
+        eventPump.post(new GeneralEvent(null, () -> {
+            Logger.info("MessageQueueTest: EventPump is killed.");
+            eventPump.kill();
+        }));
+
+        // Assert that both sender and receiver have transitioned to DEAD state
+        Assertions.assertTrue(senderTask1.killed(), "Sender 1 should be dead");
+        Assertions.assertTrue(senderTask2.killed(), "Sender 2 should be dead");
+        Assertions.assertTrue(receiverTask.killed(), "Receiver should be dead");
+    }
+
+    @AfterEach
+    public void tearDown() {
+        eventPump.kill();
+        Logger.info("EventPump killed.");
+
+        BrokerManager.getInstance().reset();
     }
 
     /**
@@ -93,13 +141,5 @@ public class MessageQueueTest {
         Logger.info("MessageReceiver task created for QueueBroker: " + queueBrokerName);
 
         return receiverTask;
-    }
-
-    @AfterEach
-    public void tearDown() {
-        eventPump.kill();
-        Logger.info("EventPump killed.");
-
-        BrokerManager.getInstance().reset();
     }
 }

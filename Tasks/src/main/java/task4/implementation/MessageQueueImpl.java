@@ -8,7 +8,7 @@ import java.util.Queue;
 public class MessageQueueImpl extends MessageQueue {
 
     private final Channel channel;
-    private final boolean isClosed;
+    private boolean isClosed;
     private final Task parentTask;
     private final Queue<Message> messages = new LinkedList<Message>();
     private SendState sendState = SendState.IDLE;
@@ -59,7 +59,12 @@ public class MessageQueueImpl extends MessageQueue {
 
     @Override
     public void close() {
-        // TODO: Implement this method
+        if (isClosed) {
+            return;
+        }
+
+        isClosed = true;
+        parentTask.post(new MQCloseEvent(parentTask));
     }
 
 
@@ -122,7 +127,7 @@ public class MessageQueueImpl extends MessageQueue {
                     } else {
                         msg.sendState = Message.MessageSendState.FINISHED;
                     }
-                    
+
                     // fall through, break is not needed
                 case FINISHED:
                     // Message fully sent, notify the listener
@@ -180,6 +185,11 @@ public class MessageQueueImpl extends MessageQueue {
                         break;
 
                     } else {
+                        if (MessageQueueImpl.this.listener == null) {
+                            // retry later if listener is not set
+                            parentTask.post(this);
+                            break;
+                        }
                         // Fully received, mark as finished
                         msg.receiveState = Message.MessageReceiveState.FINISHED;
                         MessageQueueImpl.this.listener.received(msg.message);

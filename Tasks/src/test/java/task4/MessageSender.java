@@ -12,7 +12,10 @@ public class MessageSender extends Task {
 
     // Message Counters
     public int receivedMessages = 0;
-    public int sentMessages = 0;
+    public volatile int sentMessages = 0;
+
+    // Port
+    private int port = MessageQueueTest.PORT;
 
     enum State {
         INIT, WAITING_CONNECTION, SETTING_LISTENER, FINISHED, CONNECTED, DISCONNECTING, DEAD
@@ -24,11 +27,12 @@ public class MessageSender extends Task {
         this.state = State.INIT;
     }
 
-    public MessageSender(String toConnectWith,EventPump pump, QueueBroker queueBroker) {
+    public MessageSender(String toConnectWith,EventPump pump, QueueBroker queueBroker, int port) {
         super(pump);
         this.toConnectWith = toConnectWith;
         this.queueBroker = queueBroker;
         this.state = State.INIT;
+        this.port = port;
     }
 
     private QueueBroker getQueueBroker() {
@@ -36,7 +40,7 @@ public class MessageSender extends Task {
     }
 
     private int getPort() {
-        return MessageQueueTest.PORT;
+        return this.port;
     }
 
     /**
@@ -73,8 +77,13 @@ public class MessageSender extends Task {
             return;
         }
         Message msg = ChecksumUtility.generateRandomMessageWithChecksum();
-        sentMessages++;
+        sentMessages += 1;
         messageQueue.send(msg);
+
+        // Check the number of messages sent and stop sending messages if the limit is reached
+        if (sentMessages == MessageQueueTest.NUMBER_OF_MESSAGES) {
+            state = State.FINISHED;
+        }
     }
 
 
@@ -84,10 +93,6 @@ public class MessageSender extends Task {
     private void sendDisconnectMessage(){
         Message msg = ChecksumUtility.createCloseMessageWithChecksum();
         messageQueue.send(msg);
-    }
-
-    public void setFinished() {
-        state = State.FINISHED;
     }
 
     @Override
@@ -110,16 +115,16 @@ public class MessageSender extends Task {
                     @Override
                     public void received(byte[] msg) {
                         if (ChecksumUtility.verifyReceivedMessage(new Message(msg,0,msg.length))){
-                            Logger.info("--> Echo "+ receivedMessages +" received and matched");
+                           System.out.println("--> Echo "+ receivedMessages +" received and matched ("+ queueBroker.name() +")");
                         } else {
-                            Logger.info("--> Echo "+ receivedMessages +" didn't Match");
+                            Logger.error("--> Echo "+ receivedMessages +" didn't Match");
                         }
                         receivedMessages++;
                     }
 
                     @Override
                     public void sent(Message msg) {
-                        Logger.info("--> MessageSender sent message");
+                        System.out.println("--> MessageSender sent message by ("+ queueBroker.name() +")");
                     }
 
 
