@@ -6,9 +6,12 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/Tasks.task2.iml" filepath="$PROJECT_DIR$/.idea/modules/Tasks.task2.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/Tasks.task3.iml" filepath="$PROJECT_DIR$/.idea/modules/Tasks.task3.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/Tasks.task4.iml" filepath="$PROJECT_DIR$/.idea/modules/Tasks.task4.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/fawaza.iml" filepath="$PROJECT_DIR$/.idea/modules/fawaza.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/fawaza-sar-info5.iml" filepath="$PROJECT_DIR$/.idea/modules/fawaza-sar-info5.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/fawaza-sar-info5.main.iml" filepath="$PROJECT_DIR$/.idea/modules/fawaza-sar-info5.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/fawaza-sar-info5.test.iml" filepath="$PROJECT_DIR$/.idea/modules/fawaza-sar-info5.test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/fawaza.main.iml" filepath="$PROJECT_DIR$/.idea/modules/fawaza.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/fawaza.test.iml" filepath="$PROJECT_DIR$/.idea/modules/fawaza.test.iml" />
     </modules>
   </component>
 </project>
