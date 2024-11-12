@@ -199,7 +199,7 @@ public class BrokerImpl extends Broker {
                 // Iterate over all the broker names
                 for (String connectBrokerName : names) {
                     // Get the listener for the broker
-                    QueueBroker.ConnectListener connectListener = listeners.get(name);
+                    QueueBroker.ConnectListener connectListener = listeners.get(connectBrokerName);
 
                     currentTask.post(new AcceptEvent(Task.task(), port, listener, connectListener));
                     listeners.remove(connectBrokerName);
